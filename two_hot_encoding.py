@@ -28,14 +28,6 @@ class TwoHotEmbedding(nn.Module):
         return self.embedding.weight
 
     def forward(self, input_one: torch.Tensor, input_two: torch.Tensor, **kwargs):
-        """
-        Thats the plan:
-            1. Pass input through get the encoded idx
-            2. Calculate the binary index and extract to unigram and bigram indexes
-            3. Construct a two hot encoding in one vector
-            4. Pass through a embedding layer
-        """
-
         # TODO: linear bias?
         return self._forward(two_hot(input_one, input_two, self.num_classes, **kwargs))
 

@@ -6,10 +6,11 @@ import os
 import torch
 import torch.nn as nn
 from torch.nn.functional import one_hot
-from torch.nn.modules.loss import BCEWithLogitsLoss
+from torch.nn.modules.loss import BCEWithLogitsLoss, CrossEntropyLoss
 import torch.onnx
 
 import data
+from loss import XEntropy
 import model
 from two_hot_encoding import two_hot
 
@@ -113,9 +114,9 @@ if args.model == 'Transformer':
 else:
     model = model.RNNModel(args.model, ntokens, args.emsize, args.nhid, args.nlayers, args.dropout, args.tied).to(device)
 
-# criterion = nn.NLLLoss()
-
 criterion = BCEWithLogitsLoss()
+# criterion = CrossEntropyLoss()
+# criterion = XEntropy()
 
 ###############################################################################
 # Training code

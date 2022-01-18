@@ -119,7 +119,7 @@ with open(args.outf, 'w') as outf:
             
             # debug_prediction(output, corpus, top_k=10, unigrams=False)
 
-            outf.write(word + ('\n' if i % 20 == 19 else ''))
+            outf.write("{}".format(word) + ('\n' if i % 20 == 19 else ''))
 
             if i % args.log_interval == 0:
                 print('| Generated {}/{} words'.format(i, args.words))
