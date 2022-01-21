@@ -9,12 +9,18 @@ from two_hot_encoding import TwoHotEmbedding
 class RNNModel(nn.Module):
     """Container module with an encoder, a recurrent module, and a decoder."""
 
-    def __init__(self, rnn_type, ntoken, ninp, nhid, nlayers, dropout=0.5, tie_weights=False):
+    def __init__(self, rnn_type, ntoken, ninp, nhid, nlayers, dropout=0.5, tie_weights=False, only_unigrams=False):
         super(RNNModel, self).__init__()
         self.ntoken = ntoken
         # self.drop = nn.Dropout(dropout)
         # self.encoder = nn.Embedding(ntoken, ninp)
-        self.encoder = TwoHotEmbedding(ntoken, ninp)
+        self.only_unigrams = only_unigrams
+        if self.only_unigrams:
+            self.encoder = nn.Embedding(ntoken, ninp)
+            self.forward = self.forward_char
+        else:
+            self.encoder = TwoHotEmbedding(ntoken, ninp)
+            self.forward = self.forward_two_hot
 
         if rnn_type in ['LSTM', 'GRU']:
             self.rnn = getattr(nn, rnn_type)(ninp, nhid, nlayers, dropout=dropout)
@@ -50,20 +56,17 @@ class RNNModel(nn.Module):
         nn.init.zeros_(self.decoder.weight)
         nn.init.uniform_(self.decoder.weight, -initrange, initrange)
 
-    def forward(self, input, input_two, hidden):
-        # emb = self.drop(self.encoder(input, input_two))
+    def forward_two_hot(self, input, input_two, hidden):
         emb = self.encoder(input, input_two)
         output, hidden = self.rnn(emb, hidden)
-        # output = self.drop(output)
         decoded = self.decoder(output)
         decoded = decoded.view(-1, self.ntoken)
-        return decoded, hidden
-        # return F.log_softmax(decoded, dim=1), hidden
+        # return decoded, hidden
+        return F.log_softmax(decoded, dim=1), hidden
 
-    def forward2(self, input, hidden):
-        emb = self.drop(self.encoder(input))
+    def forward_char(self, input, hidden):
+        emb = self.encoder(input)
         output, hidden = self.rnn(emb, hidden)
-        output = self.drop(output)
         decoded = self.decoder(output)
         decoded = decoded.view(-1, self.ntoken)
         return F.log_softmax(decoded, dim=1), hidden

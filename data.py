@@ -2,6 +2,8 @@ import os
 from io import open
 import torch
 
+from nltk import ngrams
+
 class Dictionary(object):
     def __init__(self):
         self.word2idx = {}
@@ -18,16 +20,20 @@ class Dictionary(object):
 
 
 class Corpus(object):
-    def __init__(self, path):
+    def __init__(self, path, only_unigrams=False):
+
+        self.only_unigrams = only_unigrams
+
         self.dictionary = Dictionary()
         self.train = self.tokenize(os.path.join(path, 'train.txt'))
         self.valid = self.tokenize(os.path.join(path, 'valid.txt'))
         self.test = self.tokenize(os.path.join(path, 'test.txt'))
 
-        self.train_bigrams = self.tokenize_bigrams(os.path.join(path, 'train.txt'))
-        # self.display_text(self.train_bigrams)
-        self.valid_bigrams = self.tokenize_bigrams(os.path.join(path, 'valid.txt'))
-        self.test_bigrams = self.tokenize_bigrams(os.path.join(path, 'test.txt'))
+        if not self.only_unigrams:
+            self.train_bigrams = self.tokenize_bigrams(os.path.join(path, 'train.txt'))
+            # self.display_text(self.train_bigrams)
+            self.valid_bigrams = self.tokenize_bigrams(os.path.join(path, 'valid.txt'))
+            self.test_bigrams = self.tokenize_bigrams(os.path.join(path, 'test.txt'))
     
     def display_text(self, t):
         for a in t:
@@ -64,7 +70,7 @@ class Corpus(object):
         with open(path, 'r', encoding="utf8") as f:
             for line in f:
                 words = list(line) + ['<eos>']
-                for word in grouped(words, 2):
+                for word in ngrams(words, 2):
                     self.dictionary.add_word(word[0] + word[1])
 
         # Tokenize file content
@@ -73,7 +79,7 @@ class Corpus(object):
             for line in f:
                 words = list(line) + ['<eos>']
                 ids = []
-                for word in grouped(words, 2):
+                for word in ngrams(words, 2):
                     ids.append(self.dictionary.word2idx[word[0] + word[1]])
                 idss.append(torch.tensor(ids).type(torch.int64))
             ids = torch.cat(idss)

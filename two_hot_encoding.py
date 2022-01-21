@@ -14,6 +14,18 @@ def two_hot(input_one, input_two, num_clases):
 
     return ret
 
+def soft_two_hot(input_one, input_two, num_classes):
+
+    shape = list(input_one.size())
+
+    shape.append(num_classes)
+    ret = torch.zeros(shape)
+
+    ret.scatter_(-1, input_one.unsqueeze(-1), 0.5)
+    ret.scatter_(-1, input_two.unsqueeze(-1), 0.5)
+
+    return ret
+
 
 class TwoHotEmbedding(nn.Module):
     """Two hot encoder of unigrams and bigrams"""

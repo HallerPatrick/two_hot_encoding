@@ -6,13 +6,13 @@ import os
 import torch
 import torch.nn as nn
 from torch.nn.functional import one_hot
-from torch.nn.modules.loss import BCEWithLogitsLoss, CrossEntropyLoss
+from torch.nn.modules.loss import BCEWithLogitsLoss, CrossEntropyLoss, NLLLoss
 import torch.onnx
 
 import data
-from loss import XEntropy
+from loss import XEntropy, softmax_cross_entropy_with_softtarget
 import model
-from two_hot_encoding import two_hot
+from two_hot_encoding import soft_two_hot, two_hot
 
 parser = argparse.ArgumentParser(description='PyTorch Wikitext-2 RNN/LSTM/GRU/Transformer Language Model')
 parser.add_argument('--data', type=str, default='./data/wikitext-2',
@@ -31,7 +31,7 @@ parser.add_argument('--clip', type=float, default=0.25,
                     help='gradient clipping')
 parser.add_argument('--epochs', type=int, default=40,
                     help='upper epoch limit')
-parser.add_argument('--batch_size', type=int, default=20, metavar='N',
+parser.add_argument('--batch_size', type=int, default=1, metavar='N',
                     help='batch size')
 parser.add_argument('--bptt', type=int, default=35,
                     help='sequence length')
@@ -49,11 +49,12 @@ parser.add_argument('--save', type=str, default='model.pt',
                     help='path to save the final model')
 parser.add_argument('--onnx-export', type=str, default='',
                     help='path to export the final model in onnx format')
-
 parser.add_argument('--nhead', type=int, default=2,
                     help='the number of heads in the encoder/decoder of the transformer model')
 parser.add_argument('--dry-run', action='store_true',
                     help='verify the code and the model')
+parser.add_argument('--only-unigrams', action='store_true',
+                    help='use character based language model')
 
 args = parser.parse_args()
 
@@ -69,7 +70,7 @@ device = torch.device("cuda" if args.cuda else "cpu")
 # Load data
 ###############################################################################
 
-corpus = data.Corpus(args.data)
+corpus = data.Corpus(args.data, args.only_unigrams)
 
 # Starting from sequential data, batchify arranges the dataset into columns.
 # For instance, with the alphabet as the sequence and batch size 4, we'd get
@@ -96,13 +97,14 @@ eval_batch_size = 10
 train_data = batchify(corpus.train, args.batch_size)
 val_data = batchify(corpus.valid, eval_batch_size)
 test_data = batchify(corpus.test, eval_batch_size)
-
-train_bigram_data = batchify(corpus.train, args.batch_size)
-val_bigram_data = batchify(corpus.valid, eval_batch_size)
-test_bigram_data = batchify(corpus.test, eval_batch_size)
-
 print(len(train_data))
-print(len(train_bigram_data))
+
+if not args.only_unigrams:
+    train_bigram_data = batchify(corpus.train, args.batch_size)
+    val_bigram_data = batchify(corpus.valid, eval_batch_size)
+    test_bigram_data = batchify(corpus.test, eval_batch_size)
+    print(len(train_bigram_data))
+
 
 ###############################################################################
 # Build the model
@@ -112,11 +114,14 @@ ntokens = len(corpus.dictionary)
 if args.model == 'Transformer':
     model = model.TransformerModel(ntokens, args.emsize, args.nhead, args.nhid, args.nlayers, args.dropout).to(device)
 else:
-    model = model.RNNModel(args.model, ntokens, args.emsize, args.nhid, args.nlayers, args.dropout, args.tied).to(device)
+    model = model.RNNModel(args.model, ntokens, args.emsize, args.nhid, args.nlayers, args.dropout, args.tied, args.only_unigrams).to(device)
 
-criterion = BCEWithLogitsLoss()
-# criterion = CrossEntropyLoss()
-# criterion = XEntropy()
+
+if args.only_unigrams:
+    criterion = NLLLoss()
+else:
+    # criterion = BCEWithLogitsLoss()
+    criterion = softmax_cross_entropy_with_softtarget
 
 ###############################################################################
 # Training code
@@ -147,8 +152,26 @@ def get_batch(source, i):
     target = source[i+1:i+1+seq_len].view(-1)
     return data, target
 
+def evaluate(data_source):
+    # Turn on evaluation mode which disables dropout.
+    model.eval()
+    total_loss = 0.
+    ntokens = len(corpus.dictionary)
+    if args.model != 'Transformer':
+        hidden = model.init_hidden(eval_batch_size)
+    with torch.no_grad():
+        for i in range(0, data_source.size(0) - 1, args.bptt):
+            data, targets = get_batch(data_source, i)
+            if args.model == 'Transformer':
+                output = model(data)
+                output = output.view(-1, ntokens)
+            else:
+                output, hidden = model(data, hidden)
+                hidden = repackage_hidden(hidden)
+            total_loss += len(data) * criterion(output, targets).item()
+    return total_loss / (len(data_source) - 1)
 
-def evaluate(data_source, data_bigrams_source):
+def evaluate_bigram(data_source, data_bigrams_source):
     # Turn on evaluation mode which disables dropout.
     model.eval()
     total_loss = 0.
@@ -180,7 +203,9 @@ def train():
         hidden = model.init_hidden(args.batch_size)
     for batch, i in enumerate(range(0, train_data.size(0) - 1, args.bptt)):
         data, targets = get_batch(train_data, i)
-        data_bigram, targets_bigram = get_batch(train_bigram_data, i)
+
+        if not args.only_unigrams:
+            data_bigram, targets_bigram = get_batch(train_bigram_data, i)
         # Starting each batch, we detach the hidden state from how it was previously produced.
         # If we didn't, the model would try backpropagating all the way to start of the dataset.
         model.zero_grad()
@@ -189,10 +214,16 @@ def train():
             output = output.view(-1, ntokens)
         else:
             hidden = repackage_hidden(hidden)
-            output, hidden = model(data, data_bigram, hidden)
+            if args.only_unigrams:
+                output, hidden = model(data, hidden)
+            else:
+                output, hidden = model(data, data_bigram, hidden)
 
         # targets = one_hot(targets, ntokens).float()
-        targets = two_hot(targets, targets_bigram, ntokens)
+
+        if not args.only_unigrams:
+            targets = two_hot(targets, targets_bigram, ntokens)
+        
         loss = criterion(output, targets)
         loss.backward()
 
@@ -234,7 +265,11 @@ try:
     for epoch in range(1, args.epochs+1):
         epoch_start_time = time.time()
         train()
-        val_loss = evaluate(val_data, val_bigram_data)
+        if args.only_unigrams:
+            val_loss = evaluate(val_data)
+        else:
+            val_loss = evaluate_bigram(val_data, val_bigram_data)
+
         print('-' * 89)
         print('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '
                 'valid ppl {:8.2f}'.format(epoch, (time.time() - epoch_start_time),
@@ -262,7 +297,10 @@ with open(args.save, 'rb') as f:
         model.rnn.flatten_parameters()
 
 # Run on test data.
-test_loss = evaluate(test_data, test_bigram_data)
+if args.only_unigrams:
+    test_loss = evaluate(test_data)
+else:
+    test_loss = evaluate_bigram(test_data, test_bigram_data)
 print('=' * 89)
 print('| End of training | test loss {:5.2f} | test ppl {:8.2f}'.format(
     test_loss, math.exp(test_loss)))

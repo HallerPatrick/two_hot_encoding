@@ -30,6 +30,8 @@ parser.add_argument('--temperature', type=float, default=1.0,
                     help='temperature - higher will increase diversity')
 parser.add_argument('--log-interval', type=int, default=100,
                     help='reporting interval')
+parser.add_argument('--only-unigrams', action='store_true',
+                    help='use character based language model')
 args = parser.parse_args()
 
 
@@ -86,7 +88,7 @@ with open(args.checkpoint, 'rb') as f:
     model = torch.load(f).to(device)
 model.eval()
 
-corpus = data.Corpus(args.data)
+corpus = data.Corpus(args.data, args.only_unigrams)
 ntokens = len(corpus.dictionary)
 
 is_transformer_model = hasattr(model, 'model_type') and model.model_type == 'Transformer'
@@ -99,27 +101,41 @@ input_two = torch.randint(ntokens, (1, 1), dtype=torch.long).to(device)
 with open(args.outf, 'w') as outf:
     with torch.no_grad():  # no tracking history
         for i in range(args.words):
-            output, hidden = model(input, input_two, hidden)
+
+            if args.only_unigrams:
+                output, hidden = model(input, hidden)
+            else:
+                output, hidden = model(input, input_two, hidden)
+
             word_weights = output.squeeze().div(args.temperature).exp().cpu()
             unigram_idx, unigram_prob = get_idx(word_weights, corpus.dictionary.idx2word)
-            bigram_idx, bigram_prob = get_idx(word_weights, corpus.dictionary.idx2word, unigram=False)
+            if not args.only_unigrams:
+                bigram_idx, bigram_prob = get_idx(word_weights, corpus.dictionary.idx2word, unigram=False)
+                input_two.fill_(bigram_idx)
+                bigram = corpus.dictionary.idx2word[bigram_idx]
+
+                input.fill_(unigram_idx)
+            else:
+                word_idx = torch.multinomial(word_weights, 1)[0]
+                input.fill_(word_idx)
+
             # word_idx = torch.multinomial(word_weights, 1)[0]
-            input.fill_(unigram_idx)
-            input_two.fill_(bigram_idx)
 
 
             unigram = corpus.dictionary.idx2word[unigram_idx]
-            bigram = corpus.dictionary.idx2word[bigram_idx]
 
             word = None            
-            if unigram_prob > bigram_prob:
+            if args.only_unigrams:
                 word = unigram
             else:
-                word = bigram
+                if unigram_prob > bigram_prob:
+                    word = unigram
+                else:
+                    word = bigram
             
             # debug_prediction(output, corpus, top_k=10, unigrams=False)
 
-            outf.write("{}".format(word) + ('\n' if i % 20 == 19 else ''))
+            outf.write("{}".format(word)) # + ('\n' if i % 100 == 99 else ''))
 
             if i % args.log_interval == 0:
                 print('| Generated {}/{} words'.format(i, args.words))
