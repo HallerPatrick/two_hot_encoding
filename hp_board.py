@@ -1,15 +1,18 @@
 from argparse import Namespace
 
+import torch
 from torch.utils.tensorboard import SummaryWriter
 
 from itertools import product
 
 from main import run_train
+import data
 
 
 def hparams(lr, batch_size, bptt, hidden_size, emsize, epochs):
     params = Namespace()
-    params.data = "./data/short"
+    params.data = "../../../Projects/character_bigrams/debug_data"
+    # params.data = "./data/debug_data"
     params.only_unigrams = True
     params.seed = 1111
     params.cuda = False
@@ -35,12 +38,12 @@ def hparams(lr, batch_size, bptt, hidden_size, emsize, epochs):
 def main():
 
 
-    lr = [0.01, 0.1, 5, 10]
+    lr = [5]
     batch_size = [1, 5, 20, 50]
-    bptt = [1, 20, 50, 100]
-    hidden_size = [10, 50, 100]
-    emsize = [50, 100, 200]
-    epochs = [1, 10, 50]
+    bptt = [20]
+    hidden_size = [50]
+    emsize = [100]
+    epochs = [10]
         
     combs = product(
         lr,
@@ -57,6 +60,19 @@ def main():
 
     writer.close()
 
+def embs():
+    
+    device = "cpu"
+
+    with open("model.pt", 'rb') as f:
+        model = torch.load(f).to(device)
+
+    corpus = data.Corpus("../../../Projects/character_bigrams/debug_data")
+    writer = SummaryWriter()
+    writer.add_embedding(model.encoder.embedding.weight, metadata=[repr(c)  for c in corpus.dictionary.word2idx.keys() ])
+    writer.close()
+
+
 
 if __name__ == "__main__":
-    main()
+    embs()

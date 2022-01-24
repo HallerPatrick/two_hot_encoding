@@ -2,7 +2,6 @@
 import torch
 from torch import nn
 
-
 class XEntropy(nn.Module):
 
 
@@ -31,3 +30,5 @@ def softmax_cross_entropy_with_softtarget(input, target, reduction='mean'):
         return torch.sum(batchloss)
     else:
         raise NotImplementedError('Unsupported reduction mode.')
+
+

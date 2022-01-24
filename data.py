@@ -70,7 +70,7 @@ class Corpus(object):
         with open(path, 'r', encoding="utf8") as f:
             for line in f:
                 words = list(line) + ['<eos>']
-                for word in ngrams(words, 2):
+                for word in grouped(words, 2):
                     self.dictionary.add_word(word[0] + word[1])
 
         # Tokenize file content
@@ -79,7 +79,7 @@ class Corpus(object):
             for line in f:
                 words = list(line) + ['<eos>']
                 ids = []
-                for word in ngrams(words, 2):
+                for word in grouped(words, 2):
                     ids.append(self.dictionary.word2idx[word[0] + word[1]])
                 idss.append(torch.tensor(ids).type(torch.int64))
             ids = torch.cat(idss)

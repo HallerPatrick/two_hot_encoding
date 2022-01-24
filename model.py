@@ -61,8 +61,9 @@ class RNNModel(nn.Module):
         output, hidden = self.rnn(emb, hidden)
         decoded = self.decoder(output)
         decoded = decoded.view(-1, self.ntoken)
-        # return decoded, hidden
-        return F.log_softmax(decoded, dim=1), hidden
+
+        return decoded, hidden
+        # return F.log_softmax(decoded, dim=1), hidden
 
     def forward_char(self, input, hidden):
         emb = self.encoder(input)

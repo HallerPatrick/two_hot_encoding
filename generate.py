@@ -8,6 +8,7 @@
 import argparse
 
 import torch
+from torch.nn import functional as F
 
 import data
 
@@ -26,6 +27,20 @@ def run_gen(args):
                     current_prob = prob
 
         return current_idx, current_prob
+
+
+    def display_prediction(prediction, corpus):
+        prediction = F.softmax(prediction.view(-1))
+        preds = []
+        for i, pred in enumerate(prediction):
+            preds.append((i, pred.item()))
+        
+        preds = sorted(preds, key=lambda x: x[1], reverse=True)
+        
+        for p in preds:
+            i, pred = p
+            print("{:9}: {:.15f},".format(repr(corpus.dictionary.idx2word[i]), pred))
+           
 
     def debug_prediction(predictions: torch.Tensor, corpus, top_k: int = 3, unigrams=True):
         """Get a debug representation of the prediction"""
@@ -70,9 +85,7 @@ def run_gen(args):
     corpus = data.Corpus(args.data, args.only_unigrams)
     ntokens = len(corpus.dictionary)
 
-    is_transformer_model = hasattr(model, 'model_type') and model.model_type == 'Transformer'
-    if not is_transformer_model:
-        hidden = model.init_hidden(1)
+    hidden = model.init_hidden(1)
 
     input = torch.randint(ntokens, (1, 1), dtype=torch.long).to(device)
     input_two = torch.randint(ntokens, (1, 1), dtype=torch.long).to(device)
@@ -86,35 +99,48 @@ def run_gen(args):
                 else:
                     output, hidden = model(input, input_two, hidden)
 
-                word_weights = output.squeeze().div(args.temperature).exp().cpu()
-                unigram_idx, unigram_prob = get_idx(word_weights, corpus.dictionary.idx2word)
-                if not args.only_unigrams:
-                    bigram_idx, bigram_prob = get_idx(word_weights, corpus.dictionary.idx2word, unigram=False)
-                    input_two.fill_(bigram_idx)
-                    bigram = corpus.dictionary.idx2word[bigram_idx]
+                display_prediction(output, corpus)
+                output = F.softmax(output, dim=1)
+                # word_weights = output.squeeze().div(args.temperature).exp().cpu()
+                # display_prediction(word_weights, corpus)
+                word_idx = torch.multinomial(output.view(-1), 1)[0]
+                # unigram_idx, unigram_prob = get_idx(word_weights, corpus.dictionary.idx2word)
 
-                    input.fill_(unigram_idx)
-                else:
-                    word_idx = torch.multinomial(word_weights, 1)[0]
-                    input.fill_(word_idx)
+                # if not args.only_unigrams:
+                #     bigram_idx, bigram_prob = get_idx(word_weights, corpus.dictionary.idx2word, unigram=False)
+                #     input_two.fill_(bigram_idx)
+                #     bigram = corpus.dictionary.idx2word[bigram_idx]
+                #
+                #     input.fill_(unigram_idx)
+                # else:
+                #     word_idx = torch.multinomial(word_weights, 1)[0]
+                #     input.fill_(word_idx)
+
+                input.fill_(word_idx)
+                word = corpus.dictionary.idx2word[word_idx]
+                print()
+                print(">>>>", repr(word))
+                print()
+                # TODO: Have to do softmax here for bigrams!
+
 
                 # word_idx = torch.multinomial(word_weights, 1)[0]
 
 
-                unigram = corpus.dictionary.idx2word[unigram_idx]
-
-                word = None            
-                if args.only_unigrams:
-                    word = unigram
-                else:
-                    if unigram_prob > bigram_prob:
-                        word = unigram
-                    else:
-                        word = bigram
+                # unigram = corpus.dictionary.idx2word[unigram_idx]
+                #
+                # word = None            
+                # if args.only_unigrams:
+                #     word = unigram
+                # else:
+                #     if unigram_prob > bigram_prob:
+                #         word = unigram
+                #     else:
+                #         word = bigram
                 
                 # debug_prediction(output, corpus, top_k=10, unigrams=False)
 
-                outf.write("{}".format(word)) # + ('\n' if i % 100 == 99 else ''))
+                outf.write("({})".format(word)) # + ('\n' if i % 100 == 99 else ''))
 
                 if i % args.log_interval == 0:
                     print('| Generated {}/{} words'.format(i, args.words))
@@ -140,7 +166,6 @@ def gen(model, corpus, device):
 
             # word_idx = torch.multinomial(word_weights, 1)[0]
 
-
             unigram = corpus.dictionary.idx2word[word_idx]
 
             word = unigram
@@ -165,7 +190,7 @@ if __name__ == "__main__":
                         help='random seed')
     parser.add_argument('--cuda', action='store_true',
                         help='use CUDA')
-    parser.add_argument('--temperature', type=float, default=1.0,
+    parser.add_argument('--temperature', type=float, default=2.0,
                         help='temperature - higher will increase diversity')
     parser.add_argument('--log-interval', type=int, default=100,
                         help='reporting interval')

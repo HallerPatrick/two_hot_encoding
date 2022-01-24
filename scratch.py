@@ -1,18 +1,40 @@
 import torch
-import torch.nn.functional as F
+from torch import nn
+from torch import optim
 
-from two_hot_encoding import target_dist
 
 
-t = torch.tensor([-1., -1., 1., 1.])
+class LSTM(nn.Module):
+    def __init__(self):
+        super(LSTM, self).__init__()
+        
+        self.n_hidden = 32
+        self.n_layers = 3
+        
+        self.lstm = nn.LSTM(
+            input_size=24,
+            hidden_size=self.n_hidden,
+            num_layers=self.n_layers,
+            batch_first=True
+        )
+        self.linear = nn.Linear(in_features=self.n_hidden, out_features=24)
+    
+    def forward(self, x):
+        h0 = torch.zeros((self.n_layers, x.size(0), self.n_hidden))
+        c0 = torch.zeros((self.n_layers, x.size(0), self.n_hidden))
+        
+        output, state = self.lstm(x, (h0, c0))
+        output = self.linear(output)
+        
+        return output, state
 
-# def target_distribution(t: torch.Tensor, dim=0) -> torch.Tensor:
-#     bin_values = torch.count_nonzero(t)
-#     
-#     dist = 1 / bin_values
-#
-#     print(bin_values)
-#
+model = LSTM()
+loss = nn.CrossEntropyLoss()
 
-out = target_dist(torch.tensor([1]),torch.tensor([2]), 3)
-print(out)
+t = torch.zeros(1, 7, 24)
+t1 = torch.zeros(1, 7, 24)
+print(t.size()) # [1, 7, 24]
+print(t1.size()) # [1, 7, 24]
+output, hidden = model(t)
+l = loss(output, t1)
+print(l)
