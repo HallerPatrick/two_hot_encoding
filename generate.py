@@ -12,35 +12,30 @@ from torch.nn import functional as F
 
 import data
 
+
 def run_gen(args):
+    def get_best_bigram(output, corpus):
+        highest_prob = 0.0
+        current_bigram = -1
 
-
-    def get_idx(word_weights, dictionary, unigram=True):
-        current_idx = -1
-        current_prob = 0.0
-        token_length = 1 if unigram else 2
-
-        for i, prob in enumerate(word_weights):
-            if len(dictionary[i]) == token_length:
-                if prob > current_prob:
-                    current_idx = i
-                    current_prob = prob
-
-        return current_idx, current_prob
-
+        for i, prob in enumerate(output.view(-1)):
+            if len(corpus.dictionary.idx2word[i]) == 2:
+                if prob > highest_prob:
+                    highest_prob = prob
+                    current_bigram = i
+        return current_bigram
 
     def display_prediction(prediction, corpus):
         prediction = F.softmax(prediction.view(-1))
         preds = []
         for i, pred in enumerate(prediction):
             preds.append((i, pred.item()))
-        
+
         preds = sorted(preds, key=lambda x: x[1], reverse=True)
-        
+
         for p in preds:
             i, pred = p
             print("{:9}: {:.15f},".format(repr(corpus.dictionary.idx2word[i]), pred))
-           
 
     def debug_prediction(predictions: torch.Tensor, corpus, top_k: int = 3, unigrams=True):
         """Get a debug representation of the prediction"""
@@ -51,7 +46,7 @@ def run_gen(args):
 
         token_length = 1 if unigrams else 2
         tries = 0
-        
+
         print("Resulting predictions:")
         for result in results:
             print("Next tokens: ", end="")
@@ -85,7 +80,9 @@ def run_gen(args):
     corpus = data.Corpus(args.data, args.only_unigrams)
     ntokens = len(corpus.dictionary)
 
-    hidden = model.init_hidden(1)
+    is_transformer_model = hasattr(model, 'model_type') and model.model_type == 'Transformer'
+    if not is_transformer_model:
+        hidden = model.init_hidden(1)
 
     input = torch.randint(ntokens, (1, 1), dtype=torch.long).to(device)
     input_two = torch.randint(ntokens, (1, 1), dtype=torch.long).to(device)
@@ -93,54 +90,55 @@ def run_gen(args):
     with open(args.outf, 'w') as outf:
         with torch.no_grad():  # no tracking history
             for i in range(args.words):
-
-                if args.only_unigrams:
-                    output, hidden = model(input, hidden)
+                if is_transformer_model:
+                    output = model(input, False)
+                    word_weights = output[-1].squeeze().div(args.temperature).exp().cpu()
+                    word_idx = torch.multinomial(word_weights, 1)[0]
+                    word_tensor = torch.Tensor([[word_idx]]).long().to(device)
+                    input = torch.cat([input, word_tensor], 0)
+                    word = corpus.dictionary.idx2word[word_idx]
                 else:
-                    output, hidden = model(input, input_two, hidden)
 
-                display_prediction(output, corpus)
-                output = F.softmax(output, dim=1)
-                # word_weights = output.squeeze().div(args.temperature).exp().cpu()
-                # display_prediction(word_weights, corpus)
-                word_idx = torch.multinomial(output.view(-1), 1)[0]
-                # unigram_idx, unigram_prob = get_idx(word_weights, corpus.dictionary.idx2word)
+                    if args.only_unigrams:
+                        output, hidden = model(input, hidden)
+                    else:
+                        output, hidden = model(input, input_two, hidden)
 
-                # if not args.only_unigrams:
-                #     bigram_idx, bigram_prob = get_idx(word_weights, corpus.dictionary.idx2word, unigram=False)
-                #     input_two.fill_(bigram_idx)
-                #     bigram = corpus.dictionary.idx2word[bigram_idx]
-                #
-                #     input.fill_(unigram_idx)
-                # else:
-                #     word_idx = torch.multinomial(word_weights, 1)[0]
-                #     input.fill_(word_idx)
+                    display_prediction(output, corpus)
+                    output = F.softmax(output, dim=1)
 
-                input.fill_(word_idx)
-                word = corpus.dictionary.idx2word[word_idx]
-                print()
-                print(">>>>", repr(word))
-                print()
-                # TODO: Have to do softmax here for bigrams!
+                    if args.only_unigrams:
+                        word_idx = torch.multinomial(output.view(-1), 1)[0]
+                        input.fill_(word_idx)
+                        word = corpus.dictionary.idx2word[word_idx]
+                    else:
+                        word_idx = torch.multinomial(output.view(-1), 1)[0]
+                        input.fill_(word_idx)
+                        word = corpus.dictionary.idx2word[word_idx]
+                        print(corpus.dictionary.idx2word[get_best_bigram(output, corpus)])
 
 
-                # word_idx = torch.multinomial(word_weights, 1)[0]
+                    print()
+                    print(">>>>", repr(word))
+                    print()
+                    # TODO: Have to do softmax here for bigrams!
 
+                    # word_idx = torch.multinomial(word_weights, 1)[0]
 
-                # unigram = corpus.dictionary.idx2word[unigram_idx]
-                #
-                # word = None            
-                # if args.only_unigrams:
-                #     word = unigram
-                # else:
-                #     if unigram_prob > bigram_prob:
-                #         word = unigram
-                #     else:
-                #         word = bigram
-                
-                # debug_prediction(output, corpus, top_k=10, unigrams=False)
+                    # unigram = corpus.dictionary.idx2word[unigram_idx]
+                    #
+                    # word = None
+                    # if args.only_unigrams:
+                    #     word = unigram
+                    # else:
+                    #     if unigram_prob > bigram_prob:
+                    #         word = unigram
+                    #     else:
+                    #         word = bigram
 
-                outf.write("({})".format(word)) # + ('\n' if i % 100 == 99 else ''))
+                    # debug_prediction(output, corpus, top_k=10, unigrams=False)
+
+                outf.write("({})".format(word))  # + ('\n' if i % 100 == 99 else ''))
 
                 if i % args.log_interval == 0:
                     print('| Generated {}/{} words'.format(i, args.words))
@@ -169,10 +167,11 @@ def gen(model, corpus, device):
             unigram = corpus.dictionary.idx2word[word_idx]
 
             word = unigram
-            
+
             output_string.append(word)
 
     return "".join(output_string)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='PyTorch Wikitext-2 Language Model')

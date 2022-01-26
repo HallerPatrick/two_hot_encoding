@@ -73,17 +73,45 @@ class Corpus(object):
                 for word in grouped(words, 2):
                     self.dictionary.add_word(word[0] + word[1])
 
+        self.dictionary.add_word("<skip>")
+
         # Tokenize file content
         with open(path, 'r', encoding="utf8") as f:
             idss = []
             for line in f:
                 words = list(line) + ['<eos>']
                 ids = []
-                for word in grouped(words, 2):
-                    ids.append(self.dictionary.word2idx[word[0] + word[1]])
-                idss.append(torch.tensor(ids).type(torch.int64))
-            ids = torch.cat(idss)
 
+                for i, word in enumerate(grouped(words, 2)):
+                    # Skip every second bigram
+                    if i % 2 == 1:
+                        ids.append(self.dictionary.word2idx["<skip>"])
+                    else:
+                        ids.append(self.dictionary.word2idx[word[0] + word[1]])
+                idss.append(torch.tensor(ids).type(torch.int64))
+
+            ids_1 = torch.cat(idss)
+
+        with open(path, 'r', encoding="utf8") as f:
+
+                idss = []
+                for line in f:
+                    words = list(line) + ['<eos>']
+                    ids = []
+
+                    for i, word in enumerate(grouped(words, 2)):
+                        # Skip every second bigram
+                        if i % 2 == 0:
+                            ids.append(self.dictionary.word2idx["<skip>"])
+                        else:
+                            ids.append(self.dictionary.word2idx[word[0] + word[1]])
+
+                    idss.append(torch.tensor(ids).type(torch.int64))
+
+                ids_2 = torch.cat(idss)
+
+        ids = torch.cat([ids_1, ids_2])
+        print(ids.size())
         return ids
 
 

@@ -10,7 +10,7 @@ from torch.nn.modules.loss import BCEWithLogitsLoss, CrossEntropyLoss, NLLLoss
 import torch.onnx
 
 import data
-from loss import XEntropy, softmax_cross_entropy_with_softtarget
+from loss import CrossEntropyLossSoft
 import model as _model
 from generate import gen
 from two_hot_encoding import soft_two_hot, two_hot
@@ -91,8 +91,7 @@ def run_train(args, writer=None, no_run=None):
     if args.only_unigrams:
         criterion = NLLLoss()
     else:
-        # criterion = BCEWithLogitsLoss()
-        criterion = softmax_cross_entropy_with_softtarget
+        criterion = CrossEntropyLossSoft(ignore_index=corpus.dictionary.word2idx["<skip>"])
 
     ###############################################################################
     # Training code
@@ -115,7 +114,6 @@ def run_train(args, writer=None, no_run=None):
     # done along the batch dimension (i.e. dimension 1), since that was handled
     # by the batchify function. The chunks are along dimension 0, corresponding
     # to the seq_len dimension in the LSTM.
-
     def get_batch(source, i):
         seq_len = min(args.bptt, len(source) - 1 - i)
         data = source[i : i + seq_len]
@@ -155,14 +153,6 @@ def run_train(args, writer=None, no_run=None):
                 # targets = two_hot(targets, targets_bigram, ntokens)
                 targets = soft_two_hot(targets, targets_bigram, ntokens)
 
-                print(data)
-
-                for row in data:
-                    corpus.display_text(row)
-
-                print(data_bigram.size())
-                corpus.display_text(data)
-                corpus.display_text(targets)
                 if args.model == "Transformer":
                     output = model(data)
                     output = output.view(-1, ntokens)
@@ -197,8 +187,6 @@ def run_train(args, writer=None, no_run=None):
                     output, hidden = model(data, hidden)
                 else:
                     output, hidden = model(data, data_bigram, hidden)
-
-            # targets = one_hot(targets, ntokens).float()
 
             if not args.only_unigrams:
                 # targets = two_hot(targets, targets_bigram, ntokens)
