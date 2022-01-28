@@ -1,22 +1,23 @@
 # coding: utf-8
 import argparse
-import time
 import math
 import os
+import time
+
 import torch
-import torch.nn as nn
-from torch.nn.functional import one_hot
-from torch.nn.modules.loss import BCEWithLogitsLoss, CrossEntropyLoss, NLLLoss
 import torch.onnx
+from torch.nn.modules.loss import NLLLoss
 
 import data
-from loss import CrossEntropyLossSoft
 import model as _model
-from generate import gen
-from two_hot_encoding import soft_two_hot, two_hot
+from loss import CrossEntropyLossSoft
+from two_hot_encoding import soft_two_hot
 
 
 def run_train(args, writer=None, no_run=None):
+
+    if writer:
+        from generate import gen
 
     # Set the random seed manually for reproducibility.
     torch.manual_seed(args.seed)
@@ -91,7 +92,7 @@ def run_train(args, writer=None, no_run=None):
     if args.only_unigrams:
         criterion = NLLLoss()
     else:
-        criterion = CrossEntropyLossSoft(ignore_index=corpus.dictionary.word2idx["<skip>"])
+        criterion = CrossEntropyLossSoft()
 
     ###############################################################################
     # Training code
@@ -114,10 +115,16 @@ def run_train(args, writer=None, no_run=None):
     # done along the batch dimension (i.e. dimension 1), since that was handled
     # by the batchify function. The chunks are along dimension 0, corresponding
     # to the seq_len dimension in the LSTM.
-    def get_batch(source, i):
-        seq_len = min(args.bptt, len(source) - 1 - i)
-        data = source[i : i + seq_len]
-        target = source[i + 1 : i + 1 + seq_len].view(-1)
+    def get_batch(source, i, bigram=False):
+        if bigram:
+            seq_len = min(args.bptt, len(source) - 2 - i)
+        else:
+            seq_len = min(args.bptt, len(source) - 1 - i)
+        data = source[i: i + seq_len]
+        if bigram:
+            target = source[i + 2: i + 2 + seq_len].view(-1)
+        else:
+            target = source[i + 1: i + 1 + seq_len].view(-1)
         return data, target
 
     def evaluate(data_source):
@@ -149,7 +156,7 @@ def run_train(args, writer=None, no_run=None):
         with torch.no_grad():
             for i in range(0, data_source.size(0) - 1, args.bptt):
                 data, targets = get_batch(data_source, i)
-                data_bigram, targets_bigram = get_batch(data_bigrams_source, i)
+                data_bigram, targets_bigram = get_batch(data_bigrams_source, i, bigram=False)
                 # targets = two_hot(targets, targets_bigram, ntokens)
                 targets = soft_two_hot(targets, targets_bigram, ntokens)
 
@@ -174,7 +181,7 @@ def run_train(args, writer=None, no_run=None):
             data, targets = get_batch(train_data, i)
 
             if not args.only_unigrams:
-                data_bigram, targets_bigram = get_batch(train_bigram_data, i)
+                data_bigram, targets_bigram = get_batch(train_bigram_data, i, bigram=False)
             # Starting each batch, we detach the hidden state from how it was previously produced.
             # If we didn't, the model would try backpropagating all the way to start of the dataset.
             model.zero_grad()
@@ -231,9 +238,9 @@ def run_train(args, writer=None, no_run=None):
         model.eval()
         dummy_input = (
             torch.LongTensor(seq_len * batch_size)
-            .zero_()
-            .view(-1, batch_size)
-            .to(device)
+                .zero_()
+                .view(-1, batch_size)
+                .to(device)
         )
         hidden = model.init_hidden(batch_size)
         torch.onnx.export(model, (dummy_input, hidden), path)
