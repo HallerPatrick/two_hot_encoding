@@ -3,6 +3,7 @@ import argparse
 import math
 import os
 import time
+from nltk.util import bigrams
 
 import torch
 import torch.onnx
@@ -120,11 +121,12 @@ def run_train(args, writer=None, no_run=None):
             seq_len = min(args.bptt, len(source) - 2 - i)
         else:
             seq_len = min(args.bptt, len(source) - 1 - i)
-        data = source[i: i + seq_len]
+        data = source[i : i + seq_len]
         if bigram:
-            target = source[i + 2: i + 2 + seq_len].view(-1)
+            target = source[i + 2 : i + 1 + seq_len].view(-1)
         else:
-            target = source[i + 1: i + 1 + seq_len].view(-1)
+            target = source[i + 1 : i + 1 + seq_len].view(-1)
+
         return data, target
 
     def evaluate(data_source):
@@ -156,7 +158,9 @@ def run_train(args, writer=None, no_run=None):
         with torch.no_grad():
             for i in range(0, data_source.size(0) - 1, args.bptt):
                 data, targets = get_batch(data_source, i)
-                data_bigram, targets_bigram = get_batch(data_bigrams_source, i, bigram=False)
+                data_bigram, targets_bigram = get_batch(
+                    data_bigrams_source, i, bigram=True
+                )
                 # targets = two_hot(targets, targets_bigram, ntokens)
                 targets = soft_two_hot(targets, targets_bigram, ntokens)
 
@@ -178,10 +182,23 @@ def run_train(args, writer=None, no_run=None):
         if args.model != "Transformer":
             hidden = model.init_hidden(args.batch_size)
         for batch, i in enumerate(range(0, train_data.size(0) - 1, args.bptt)):
-            data, targets = get_batch(train_data, i)
+            data, targets = get_batch(train_data, i, bigram=False)
 
             if not args.only_unigrams:
-                data_bigram, targets_bigram = get_batch(train_bigram_data, i, bigram=False)
+                data_bigram, targets_bigram = get_batch(
+                    train_bigram_data, i, bigram=True
+                )
+
+            # print("--")
+            # corpus.display_text(data[:, :1])
+            # print("--")
+            # corpus.display_text(targets[::5])
+            # print("--")
+            # corpus.display_text(data_bigram[:, :1])
+            # print("--")
+            # corpus.display_text(targets_bigram[::5])
+            # exit()
+
             # Starting each batch, we detach the hidden state from how it was previously produced.
             # If we didn't, the model would try backpropagating all the way to start of the dataset.
             model.zero_grad()
@@ -238,9 +255,9 @@ def run_train(args, writer=None, no_run=None):
         model.eval()
         dummy_input = (
             torch.LongTensor(seq_len * batch_size)
-                .zero_()
-                .view(-1, batch_size)
-                .to(device)
+            .zero_()
+            .view(-1, batch_size)
+            .to(device)
         )
         hidden = model.init_hidden(batch_size)
         torch.onnx.export(model, (dummy_input, hidden), path)
@@ -346,7 +363,7 @@ if __name__ == "__main__":
     parser.add_argument("--clip", type=float, default=0.25, help="gradient clipping")
     parser.add_argument("--epochs", type=int, default=40, help="upper epoch limit")
     parser.add_argument(
-        "--batch_size", type=int, default=1, metavar="N", help="batch size"
+        "--batch_size", type=int, default=20, metavar="N", help="batch size"
     )
     parser.add_argument("--bptt", type=int, default=35, help="sequence length")
     parser.add_argument(

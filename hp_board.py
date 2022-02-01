@@ -11,8 +11,8 @@ import data
 
 def hparams(lr, batch_size, bptt, hidden_size, emsize, epochs):
     params = Namespace()
-    params.data = "../../../Projects/character_bigrams/debug_data"
-    # params.data = "./data/debug_data"
+    # params.data = "../../../Projects/character_bigrams/debug_data"
+    params.data = "./data/debug_data"
     params.only_unigrams = True
     params.seed = 1111
     params.cuda = False
@@ -35,8 +35,8 @@ def hparams(lr, batch_size, bptt, hidden_size, emsize, epochs):
     params.epochs = epochs
     return params
 
-def main():
 
+def main():
 
     lr = [5]
     batch_size = [1, 5, 20, 50]
@@ -44,13 +44,8 @@ def main():
     hidden_size = [50]
     emsize = [100]
     epochs = [10]
-        
-    combs = product(
-        lr,
-        batch_size,
-        bptt, hidden_size, emsize,
-        epochs
-    )
+
+    combs = product(lr, batch_size, bptt, hidden_size, emsize, epochs)
 
     writer = SummaryWriter()
 
@@ -60,18 +55,21 @@ def main():
 
     writer.close()
 
+
 def embs():
-    
+
     device = "cpu"
 
-    with open("model.pt", 'rb') as f:
+    with open("model.pt", "rb") as f:
         model = torch.load(f).to(device)
 
-    corpus = data.Corpus("../../../Projects/character_bigrams/debug_data")
+    corpus = data.Corpus("./data/love_song")
     writer = SummaryWriter()
-    writer.add_embedding(model.encoder.embedding.weight, metadata=[repr(c)  for c in corpus.dictionary.word2idx.keys() ])
+    writer.add_embedding(
+        model.encoder.embedding.weight,
+        metadata=[repr(c) for c in corpus.dictionary.word2idx.keys()],
+    )
     writer.close()
-
 
 
 if __name__ == "__main__":

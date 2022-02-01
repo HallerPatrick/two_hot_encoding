@@ -12,27 +12,33 @@ from torch.nn import functional as F
 
 import data
 
-parser = argparse.ArgumentParser(description='PyTorch Wikitext-2 Language Model')
+parser = argparse.ArgumentParser(description="PyTorch Wikitext-2 Language Model")
 
 # Model parameters.
-parser.add_argument('--data', type=str, default='./data/wikitext-2',
-                    help='location of the data corpus')
-parser.add_argument('--checkpoint', type=str, default='./model.pt',
-                    help='model checkpoint to use')
-parser.add_argument('--outf', type=str, default='generated.txt',
-                    help='output file for generated text')
-parser.add_argument('--words', type=int, default='1000',
-                    help='number of words to generate')
-parser.add_argument('--seed', type=int, default=1111,
-                    help='random seed')
-parser.add_argument('--cuda', action='store_true',
-                    help='use CUDA')
-parser.add_argument('--temperature', type=float, default=2.0,
-                    help='temperature - higher will increase diversity')
-parser.add_argument('--log-interval', type=int, default=100,
-                    help='reporting interval')
-parser.add_argument('--only-unigrams', action='store_true',
-                    help='use character based language model')
+parser.add_argument(
+    "--data", type=str, default="./data/wikitext-2", help="location of the data corpus"
+)
+parser.add_argument(
+    "--checkpoint", type=str, default="./model.pt", help="model checkpoint to use"
+)
+parser.add_argument(
+    "--outf", type=str, default="generated.txt", help="output file for generated text"
+)
+parser.add_argument(
+    "--words", type=int, default="1000", help="number of words to generate"
+)
+parser.add_argument("--seed", type=int, default=1111, help="random seed")
+parser.add_argument("--cuda", action="store_true", help="use CUDA")
+parser.add_argument(
+    "--temperature",
+    type=float,
+    default=2.0,
+    help="temperature - higher will increase diversity",
+)
+parser.add_argument("--log-interval", type=int, default=100, help="reporting interval")
+parser.add_argument(
+    "--only-unigrams", action="store_true", help="use character based language model"
+)
 args = parser.parse_args()
 
 
@@ -43,17 +49,21 @@ def get_best(output, corpus, unigram=True, by_unigram=None):
     token_length = 1 if unigram else 2
 
     for i, prob in enumerate(output.view(-1)):
-        if len(corpus.dictionary.idx2word[i]) == token_length:
+        # For length comparison
+        token = (
+            corpus.dictionary.idx2word[i].replace("<eos>", "i").replace("<start>", "i")
+        )
+        if len(token) == token_length:
             if prob > highest_prob:
                 highest_prob = prob
                 current_bigram = i
 
     if by_unigram:
         if corpus.dictionary.idx2word[current_bigram][0] == by_unigram:
-            return current_bigram
+            return current_bigram, highest_prob
         return None
     else:
-        return current_bigram
+        return current_bigram, highest_prob
 
 
 def display_prediction(prediction, corpus):
@@ -80,14 +90,16 @@ device = torch.device("cuda" if args.cuda else "cpu")
 if args.temperature < 1e-3:
     parser.error("--temperature has to be greater or equal 1e-3")
 
-with open(args.checkpoint, 'rb') as f:
+with open(args.checkpoint, "rb") as f:
     model = torch.load(f).to(device)
 model.eval()
 
 corpus = data.Corpus(args.data, args.only_unigrams)
 ntokens = len(corpus.dictionary)
 
-is_transformer_model = hasattr(model, 'model_type') and model.model_type == 'Transformer'
+is_transformer_model = (
+    hasattr(model, "model_type") and model.model_type == "Transformer"
+)
 if not is_transformer_model:
     hidden = model.init_hidden(1)
 
@@ -96,7 +108,7 @@ input_two = torch.randint(ntokens, (1, 1), dtype=torch.long).to(device)
 
 last_word = corpus.dictionary.idx2word[input]
 
-with open(args.outf, 'w') as outf:
+with open(args.outf, "w") as outf:
     with torch.no_grad():  # no tracking history
         for i in range(args.words):
             if is_transformer_model:
@@ -118,26 +130,24 @@ with open(args.outf, 'w') as outf:
 
                 if args.only_unigrams:
                     # Get best unigram
-                    word_idx = get_best(output, corpus)
+                    word_idx, prob = get_best(output, corpus)
                     input.fill_(word_idx)
                     word = corpus.dictionary.idx2word[word_idx]
                 else:
                     # Get best unigram
-                    word_idx = get_best(output, corpus)
+                    word_idx, unig_prob = get_best(output, corpus)
                     input.fill_(word_idx)
+
+                    best_bigram_idx, bigram_prob = get_best(output, corpus, False)
+
                     word = corpus.dictionary.idx2word[word_idx]
-                    print(f"Unigram: {word}")
 
-                    best_bigram_idx = get_best(output, corpus, False)
+                    # if len(last_word) == 1:
+                    #     word = corpus.dictionary.idx2word[best_bigram_idx]
+                    # else:
+                    #     word = corpus.dictionary.idx2word[word_idx]
 
-                    fitting_bigram_idx = get_best(output, corpus, False, by_unigram=word)
-
-                    # If we found a suitable bigram
-                    if fitting_bigram_idx:
-                        # If last prediction was a unigram
-                        if len(last_word) == 1:
-                            word = corpus.dictionary.idx2word[fitting_bigram_idx]
-                            print(f"Bigram: {word}")
+                    last_word = word
 
                     input_two.fill_(best_bigram_idx)
 
@@ -149,7 +159,7 @@ with open(args.outf, 'w') as outf:
             outf.write("({})".format(word))  # + ('\n' if i % 100 == 99 else ''))
 
             if i % args.log_interval == 0:
-                print('| Generated {}/{} words'.format(i, args.words))
+                print("| Generated {}/{} words".format(i, args.words))
 
 
 def gen(model, corpus, device):

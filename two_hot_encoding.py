@@ -5,10 +5,11 @@ import torch.nn.functional as F
 
 
 def two_hot(input_one, input_two, num_clases):
+    assert input_one.device == input_two.device
     shape = list(input_one.size())
 
     shape.append(num_clases)
-    ret = torch.zeros(shape)
+    ret = torch.zeros(shape).to(input_one.device)
 
     # Unigrams
     ret.scatter_(-1, input_one.unsqueeze(-1), 1)
@@ -21,10 +22,11 @@ def two_hot(input_one, input_two, num_clases):
 
 
 def soft_two_hot(input_one, input_two, num_classes):
+    assert input_one.device == input_two.device
     shape = list(input_one.size())
 
     shape.append(num_classes)
-    ret = torch.zeros(shape)
+    ret = torch.zeros(shape).to(input_one.device)
 
     # Unigrams
     ret.scatter_(-1, input_one.unsqueeze(-1), 0.5)
