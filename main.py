@@ -34,7 +34,8 @@ def run_train(args, writer=None, no_run=None):
     # Load data
     ###############################################################################
 
-    corpus = data.Corpus(args.data, args.only_unigrams)
+    corpus = data.Corpus(args.data, args.only_unigrams, args.unk_t)
+    print(f"Dictionary Size: {len(corpus.dictionary)}")
 
     # Starting from sequential data, batchify arranges the dataset into columns.
     # For instance, with the alphabet as the sequence and batch size 4, we'd get
@@ -351,6 +352,9 @@ if __name__ == "__main__":
         type=str,
         default="LSTM",
         help="type of recurrent net (RNN_TANH, RNN_RELU, LSTM, GRU, Transformer)",
+    )
+    parser.add_argument(
+        "--unk-t", type=int, default=3, help="UNK threshold for bigrams"
     )
     parser.add_argument(
         "--emsize", type=int, default=200, help="size of word embeddings"
