@@ -3,25 +3,35 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
+
 def two_hot(input_one, input_two, num_clases):
+    assert input_one.device == input_two.device
     shape = list(input_one.size())
 
     shape.append(num_clases)
-    ret = torch.zeros(shape)
+    ret = torch.zeros(shape).to(input_one.device)
 
+    # Unigrams
     ret.scatter_(-1, input_one.unsqueeze(-1), 1)
+    # Bigrams
     ret.scatter_(-1, input_two.unsqueeze(-1), 1)
+    # ret.scatter_(-1, input_two[input_two != -1], 1)
+    # input_two = input_two.unsqueeze(-1)
 
     return ret
 
-def soft_two_hot(input_one, input_two, num_classes):
 
+def soft_two_hot(input_one, input_two, num_classes):
+    assert input_one.device == input_two.device
     shape = list(input_one.size())
 
     shape.append(num_classes)
-    ret = torch.zeros(shape)
+    ret = torch.zeros(shape).to(input_one.device)
 
+    # Unigrams
     ret.scatter_(-1, input_one.unsqueeze(-1), 0.5)
+
+    # Bigrams
     ret.scatter_(-1, input_two.unsqueeze(-1), 0.5)
 
     return ret

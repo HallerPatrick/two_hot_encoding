@@ -1,18 +1,13 @@
 import torch
-import torch.nn.functional as F
-
-from two_hot_encoding import target_dist
+from torch import nn
 
 
-t = torch.tensor([-1., -1., 1., 1.])
+def main():
+    t = torch.zeros((2, 3, 4))
 
-# def target_distribution(t: torch.Tensor, dim=0) -> torch.Tensor:
-#     bin_values = torch.count_nonzero(t)
-#     
-#     dist = 1 / bin_values
-#
-#     print(bin_values)
-#
+    t[:, :, 2] = 99
+    print(t)
 
-out = target_dist(torch.tensor([1]),torch.tensor([2]), 3)
-print(out)
+
+if __name__ == "__main__":
+    main()

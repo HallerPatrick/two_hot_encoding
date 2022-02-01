@@ -3,8 +3,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-
 from two_hot_encoding import TwoHotEmbedding
+
 
 class RNNModel(nn.Module):
     """Container module with an encoder, a recurrent module, and a decoder."""
@@ -28,9 +28,10 @@ class RNNModel(nn.Module):
             try:
                 nonlinearity = {'RNN_TANH': 'tanh', 'RNN_RELU': 'relu'}[rnn_type]
             except KeyError:
-                raise ValueError( """An invalid option for `--model` was supplied,
+                raise ValueError("""An invalid option for `--model` was supplied,
                                  options are ['LSTM', 'GRU', 'RNN_TANH' or 'RNN_RELU']""")
             self.rnn = nn.RNN(ninp, nhid, nlayers, nonlinearity=nonlinearity, dropout=dropout)
+
         self.decoder = nn.Linear(nhid, ntoken)
 
         # Optionally tie weights as in:
@@ -61,8 +62,8 @@ class RNNModel(nn.Module):
         output, hidden = self.rnn(emb, hidden)
         decoded = self.decoder(output)
         decoded = decoded.view(-1, self.ntoken)
-        # return decoded, hidden
-        return F.log_softmax(decoded, dim=1), hidden
+        return decoded, hidden
+        # return F.log_softmax(decoded, dim=1), hidden
 
     def forward_char(self, input, hidden):
         emb = self.encoder(input)
@@ -78,6 +79,7 @@ class RNNModel(nn.Module):
                     weight.new_zeros(self.nlayers, bsz, self.nhid))
         else:
             return weight.new_zeros(self.nlayers, bsz, self.nhid)
+
 
 # Temporarily leave PositionalEncoding module here. Will be moved somewhere else.
 class PositionalEncoding(nn.Module):
@@ -122,6 +124,7 @@ class PositionalEncoding(nn.Module):
 
         x = x + self.pe[:x.size(0), :]
         return self.dropout(x)
+
 
 class TransformerModel(nn.Module):
     """Container module with an encoder, a recurrent or transformer module, and a decoder."""
