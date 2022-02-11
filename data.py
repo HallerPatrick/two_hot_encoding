@@ -1,13 +1,15 @@
 import os
+import sys
 
-from collections import Counter
+from collections import Counter, defaultdict
+from pprint import pprint
 from typing import List
 
 import torch
 from nltk import ngrams
 
 
-class Dictionary(object):
+class Dictionary:
     def __init__(self):
         self.word2idx = {}
         self.idx2word = []
@@ -30,50 +32,36 @@ class Dictionary(object):
         return len(self.idx2word)
 
 
-class Corpus(object):
-    def __init__(self, path, only_unigrams=False, unk_threshold=3):
+class Corpus:
+    def __init__(self, path, only_unigrams=False, ngrams=2, unk_threshold=3):
 
         self.only_unigrams = only_unigrams
         self.unk_threshold = unk_threshold
+        self.ngrams = ngrams
+
+        # Keep track of all indexes for each ngram, this is used
+        # for the generating task
+        self.ngram_indexes = defaultdict(list)
 
         self.dictionary = Dictionary()
+
         self.train = self.tokenize(os.path.join(path, "train.txt"))
         self.valid = self.tokenize(os.path.join(path, "valid.txt"))
         self.test = self.tokenize(os.path.join(path, "test.txt"))
-
-        if not self.only_unigrams:
-            self.train_bigrams = self.tokenize_bigrams(os.path.join(path, "train.txt"))
-            # self.display_text(self.train_bigrams)
-            self.valid_bigrams = self.tokenize_bigrams(os.path.join(path, "valid.txt"))
-            self.test_bigrams = self.tokenize_bigrams(os.path.join(path, "test.txt"))
 
     def display_text(self, t):
         for a in t:
             print(repr(self.dictionary.idx2word[a.item()]), end="")
         print()
 
-    def tokenize(self, path):
-        """Tokenizes a text file."""
-        assert os.path.exists(path)
-        # Add words to the dictionary
-        with open(path, "r", encoding="utf8") as f:
-            for line in f:
-                words = list(line) + ["<eos>"]
-                for word in words:
-                    self.dictionary.add_word(word)
+    def remove_marker_tokens(self, token):
+        """Due to some str length comparison to determine what n-gram the token
+        is. We replace the marker tokens, with a single char, for easy comparison
+        """
+        for marker in self.dictionary.get_marker_tokens():
+            token = token.replace(marker, "i")
 
-        # Tokenize file content
-        with open(path, "r", encoding="utf8") as f:
-            idss = []
-            for line in f:
-                words = list(line) + ["<eos>"]
-                ids = []
-                for word in words:
-                    ids.append(self.dictionary.word2idx[word])
-                idss.append(torch.tensor(ids).type(torch.int64))
-            ids = torch.cat(idss)
-
-        return ids
+        return token
 
     def setup_dictionary(self, path):
         assert os.path.exists(path)
@@ -84,26 +72,31 @@ class Corpus(object):
             lines = f.readlines()
 
         for line in lines:
-            chars = list(line)
+            chars = ["<start>"] + list(line) + ["<eos>"]
+            for i in range(1, self.ngrams + 1):
+                # Add UNK token for ngram
+                self.dictionary.add_word(f"<{i}-UNK>")
 
-            for bigram in ngrams(chars, 2):
-                c1, c2 = bigram
-                token_frequency[c1] = -1
-                token_frequency[c2] = -1
+                for ngram in ngrams(chars, i):
+                    # Add all characters to frequencies dict
+                    for c in ngram:
+                        token_frequency[c] = -1
 
-                # For now only keep track of bigram frequencies
-                token_frequency[c1 + c2] += 1
+                    if len(ngram) != 1:
+                        # For now only keep track of ngram frequencies
+                        token_frequency["".join(ngram)] += 1
 
         self.dictionary.add_word("<start>")
         self.dictionary.add_word("<eos>")
-        self.dictionary.add_word("<UNK>")
-        self.dictionary.add_word("<BI-UNK>")
 
         for toke, freq in token_frequency.items():
             if freq > self.unk_threshold or freq == -1:
-                self.dictionary.add_word(toke)
+                sanit_token = self.remove_marker_tokens(toke)
+                idx = self.dictionary.add_word(toke)
+                if idx not in self.ngram_indexes[len(sanit_token)]:
+                    self.ngram_indexes[len(sanit_token)].append(idx)
 
-    def tokenize_bigrams(self, path):
+    def tokenize(self, path):
         """Tokenizes a text file."""
 
         # Add words to the dictionary
@@ -111,22 +104,45 @@ class Corpus(object):
 
         # Tokenize file content
         with open(path, "r", encoding="utf8") as f:
-            idss = []
-            for line in f:
-                words = ["<start>"] + list(line) + ["<eos>"]
+            lines = f.readlines()
+
+        n_gram_sequences = []
+        min_length = sys.maxsize
+
+        for n in range(1, self.ngrams + 1):
+            idss_n = []
+            for line in lines:
+                if n == 1:
+                    words = list(line) + ["<eos>"]
+                else:
+                    # Adding start offsets for all ngrams
+                    words = ["<start>" for _ in range(1, n)]
+                    words.extend(list(line))
+                    words.append("<eos>")
+
                 ids = []
-
-                for i, word in enumerate(ngrams(words, 2)):
+                length = 0
+                for i, word in enumerate(ngrams(words, n)):
                     try:
-                        ids.append(self.dictionary.word2idx[word[0] + word[1]])
+                        ids.append(self.dictionary.word2idx["".join(word)])
                     except KeyError:
-                        ids.append(self.dictionary.word2idx["<BI-UNK>"])
+                        ids.append(self.dictionary.word2idx[f"<{n}-UNK>"])
+                    length += 1
 
-                idss.append(torch.tensor(ids).type(torch.int64))
+                idss_n.append(torch.tensor(ids).type(torch.int64))
 
-            ids = torch.cat(idss)
+            # N-gram sequence
+            seq = torch.cat(idss_n).unsqueeze(dim=0)
+            length = seq.size(1)
 
-        return ids
+            if length < min_length:
+                min_length = length
+
+            n_gram_sequences.append(seq)
+
+        n_gram_sequences = torch.cat([t[:min_length] for t in n_gram_sequences])
+
+        return n_gram_sequences
 
 
 def grouped(iterable, n):

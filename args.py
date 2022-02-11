@@ -33,7 +33,7 @@ def argparser_generate():
     parser.add_argument(
         "--temperature",
         type=float,
-        default=2.0,
+        default=0.2,
         help="temperature - higher will increase diversity",
     )
     parser.add_argument(
@@ -68,6 +68,11 @@ def argparser_train():
         "--unk-t", type=int, default=3, help="UNK threshold for bigrams"
     )
     parser.add_argument("--ngrams", type=int, default=2, help="N-Grams used")
+    parser.add_argument(
+        "--unigram-ppl",
+        action="store_true",
+        help="Calculate perplexity only over unigrams",
+    )
     parser.add_argument(
         "--emsize", type=int, default=200, help="size of word embeddings"
     )
