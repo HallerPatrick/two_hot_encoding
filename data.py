@@ -33,11 +33,14 @@ class Dictionary:
 
 
 class Corpus:
-    def __init__(self, path, only_unigrams=False, ngrams=2, unk_threshold=3):
+    def __init__(
+        self, path, device="cpu", only_unigrams=False, ngrams=2, unk_threshold=3
+    ):
 
         self.only_unigrams = only_unigrams
         self.unk_threshold = unk_threshold
         self.ngrams = ngrams
+        self.device = device
 
         # Keep track of all indexes for each ngram, this is used
         # for the generating task
@@ -140,7 +143,9 @@ class Corpus:
 
             n_gram_sequences.append(seq)
 
-        n_gram_sequences = torch.cat([t[:min_length] for t in n_gram_sequences])
+        n_gram_sequences = torch.cat([t[:min_length] for t in n_gram_sequences]).to(
+            self.device
+        )
 
         return n_gram_sequences
 
