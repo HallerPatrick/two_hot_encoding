@@ -119,10 +119,5 @@ def argparser_train():
     parser.add_argument(
         "--dry-run", action="store_true", help="verify the code and the model"
     )
-    parser.add_argument(
-        "--only-unigrams",
-        action="store_true",
-        help="use character based language model",
-    )
 
     return parser.parse_args()

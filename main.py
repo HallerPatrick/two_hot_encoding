@@ -120,10 +120,7 @@ def run_train(args):
             args.tied,
         ).to(device)
 
-    if args.only_unigrams:
-        criterion = NLLLoss()
-    else:
-        criterion = CrossEntropyLossSoft()
+    criterion = CrossEntropyLossSoft()
 
     ###############################################################################
     # Training code

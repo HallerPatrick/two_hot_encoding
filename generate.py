@@ -16,30 +16,6 @@ from two_hot_encoding import n_hot
 args = argparser_generate()
 
 
-def get_best(output, corpus, unigram=True, by_unigram=None):
-    highest_prob = 0.0
-    current_bigram = -1
-
-    token_length = 1 if unigram else 2
-
-    for i, prob in enumerate(output.view(-1)):
-        # For length comparison
-        token = (
-            corpus.dictionary.idx2word[i].replace("<eos>", "i").replace("<start>", "i")
-        )
-        if len(token) == token_length:
-            if prob > highest_prob:
-                highest_prob = prob
-                current_bigram = i
-
-    if by_unigram:
-        if corpus.dictionary.idx2word[current_bigram][0] == by_unigram:
-            return current_bigram, highest_prob
-        return None
-    else:
-        return current_bigram, highest_prob
-
-
 def get_best_ngrams(output, corpus, ngrams):
 
     best_ngrams = []
@@ -85,15 +61,12 @@ if torch.cuda.is_available():
 
 device = torch.device("cuda" if args.cuda else "cpu")
 
-if args.temperature < 1e-3:
-    print("--temperature has to be greater or equal 1e-3")
-
 with open(args.checkpoint, "rb") as f:
     model = torch.load(f).to(device)
 
 model.eval()
 
-corpus = data.Corpus(args.data, args.only_unigrams, model.ngrams, args.unk_t)
+corpus = data.Corpus(args.data, device, args.only_unigrams, model.ngrams, args.unk_t)
 
 pprint(corpus.ngram_indexes)
 ntokens = len(corpus.dictionary)
@@ -125,7 +98,12 @@ with open(args.outf, "w") as outf:
                 print("+" * 89)
                 output = F.softmax(output, dim=1)
 
-                word_weights = output.squeeze().div(args.temperature).exp().cpu()
+                if args.temperature == 0.0:
+                    word_weights = (
+                        output.squeeze()
+                    )  # .div(args.temperature).exp().cpu()
+                else:
+                    word_weights = output.squeeze().div(args.temperature).exp().cpu()
 
                 ngram_idxs = []
                 # Iter over all ngram idxs from corpus
