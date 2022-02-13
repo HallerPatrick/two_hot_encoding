@@ -33,11 +33,8 @@ class Dictionary:
 
 
 class Corpus:
-    def __init__(
-        self, path, device="cpu", only_unigrams=False, ngrams=2, unk_threshold=3
-    ):
+    def __init__(self, path, device="cpu", ngrams=2, unk_threshold=3):
 
-        self.only_unigrams = only_unigrams
         self.unk_threshold = unk_threshold
         self.ngrams = ngrams
         self.device = device

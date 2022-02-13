@@ -124,7 +124,7 @@ with open(args.outf, "w") as outf:
                             break
 
                 # Build new input from best ngram indexes
-                input = torch.cat(ngram_idxs)
+                input = torch.cat(ngram_idxs).to(device)
 
                 best_ngrams = get_best_ngrams(output, corpus, args.ngrams)
 

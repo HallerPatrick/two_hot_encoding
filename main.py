@@ -90,7 +90,7 @@ def run_train(args):
     # Load data
     ###############################################################################
 
-    corpus = data.Corpus(args.data, args.only_unigrams, args.ngrams, args.unk_t)
+    corpus = data.Corpus(args.data, args.ngrams, args.unk_t)
 
     print(f"Dictionary Size: {len(corpus.dictionary)}")
 
