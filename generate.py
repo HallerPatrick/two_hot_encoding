@@ -5,13 +5,11 @@
 #
 ###############################################################################
 
-from pprint import pprint
 import torch
 from torch.nn import functional as F
 from args import argparser_generate
 
 import data
-from two_hot_encoding import n_hot
 
 args = argparser_generate()
 
@@ -25,11 +23,11 @@ def get_best_ngrams(output, corpus, ngrams):
 
         for i, prob in enumerate(output.view(-1)):
             # For length comparison
-            token = (
-                corpus.dictionary.idx2word[i]
-                .replace("<eos>", "i")
-                .replace("<start>", "i")
-            )
+            token = corpus.dictionary.idx2word[i]
+
+            if token.startswith("<") and token.endswith(">"):
+                token = "i"
+
             if len(token) == n:
                 if prob > highest_prob:
                     highest_prob = prob
@@ -66,9 +64,8 @@ with open(args.checkpoint, "rb") as f:
 
 model.eval()
 
-corpus = data.Corpus(args.data, device, args.only_unigrams, model.ngrams, args.unk_t)
+corpus = data.Corpus(args.data, device, model.ngrams, args.unk_t)
 
-pprint(corpus.ngram_indexes)
 ntokens = len(corpus.dictionary)
 
 is_transformer_model = (
@@ -80,55 +77,49 @@ if not is_transformer_model:
 
 input = torch.randint(ntokens, (model.ngrams, 1, 1), dtype=torch.long).to(device)
 
+
+# corpus.display_list(corpus.ngram_indexes[1])
+
 with open(args.outf, "w") as outf:
     with torch.no_grad():  # no tracking history
         for i in range(args.words):
-            if is_transformer_model:
-                output = model(input, False)
-                word_weights = output[-1].squeeze().div(args.temperature).exp().cpu()
-                word_idx = torch.multinomial(word_weights, 1)[0]
-                word_tensor = torch.Tensor([[word_idx]]).long().to(device)
-                input = torch.cat([input, word_tensor], 0)
-                word = corpus.dictionary.idx2word[word_idx]
+
+            output, hidden = model(input, hidden)
+
+            display_prediction(output, corpus)
+            print("+" * 89)
+            output = F.softmax(output, dim=1)
+
+            if args.temperature == 0.0:
+                word_weights = output.squeeze().cpu()
             else:
+                word_weights = output.squeeze().div(args.temperature).exp().cpu()
 
-                output, hidden = model(input, hidden)
+            ngram_idxs = []
+            # Iter over all ngram idxs from corpus
+            for ngram, idxs in corpus.ngram_indexes.items():
 
-                display_prediction(output, corpus)
-                print("+" * 89)
-                output = F.softmax(output, dim=1)
+                # Select indexes from output distribution
+                ngram_word_weights = torch.index_select(
+                    word_weights, 0, torch.tensor(sorted(idxs))
+                )
+                print(len(idxs))
 
-                if args.temperature == 0.0:
-                    word_weights = (
-                        output.squeeze()
-                    )  # .div(args.temperature).exp().cpu()
-                else:
-                    word_weights = output.squeeze().div(args.temperature).exp().cpu()
+                # Get best ngram idx
+                ngram_idx = torch.multinomial(ngram_word_weights, 1)[0]
 
-                ngram_idxs = []
-                # Iter over all ngram idxs from corpus
-                for ngram, idxs in corpus.ngram_indexes.items():
+                # Trace back the original idx
+                for i, idx in enumerate(sorted(idxs)):
+                    if ngram_idx.item() == i:
+                        ngram_idxs.append(torch.tensor([[idx]]).unsqueeze(dim=0))
+                        break
 
-                    # Select indexes from output distribution
-                    ngram_word_weights = torch.index_select(
-                        word_weights, 0, torch.tensor(sorted(idxs))
-                    )
+            # Build new input from best ngram indexes
+            input = torch.cat(ngram_idxs).to(device)
 
-                    # Get best ngram idx
-                    ngram_idx = torch.multinomial(ngram_word_weights, 1)[0]
+            best_ngrams = get_best_ngrams(output, corpus, args.ngrams)
 
-                    # Trace back the original idx
-                    for i, idx in enumerate(sorted(idxs)):
-                        if ngram_idx.item() == i:
-                            ngram_idxs.append(torch.tensor([[idx]]).unsqueeze(dim=0))
-                            break
-
-                # Build new input from best ngram indexes
-                input = torch.cat(ngram_idxs).to(device)
-
-                best_ngrams = get_best_ngrams(output, corpus, args.ngrams)
-
-                word = corpus.dictionary.idx2word[best_ngrams[0][0]]
+            word = corpus.dictionary.idx2word[best_ngrams[0][0]]
 
             outf.write("({})".format(word))  # + ('\n' if i % 100 == 99 else ''))
 

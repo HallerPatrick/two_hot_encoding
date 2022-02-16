@@ -54,6 +54,11 @@ class Corpus:
             print(repr(self.dictionary.idx2word[a.item()]), end="")
         print()
 
+    def display_list(self, l):
+        for a in l:
+            print(repr(self.dictionary.idx2word[a]), end="")
+        print()
+
     def remove_marker_tokens(self, token):
         """Due to some str length comparison to determine what n-gram the token
         is. We replace the marker tokens, with a single char, for easy comparison
@@ -75,7 +80,12 @@ class Corpus:
             chars = ["<start>"] + list(line) + ["<eos>"]
             for i in range(1, self.ngrams + 1):
                 # Add UNK token for ngram
-                self.dictionary.add_word(f"<{i}-UNK>")
+                n_unk_token = f"<{i}-UNK>"
+
+                unk_idx = self.dictionary.add_word(n_unk_token)
+
+                if unk_idx not in self.ngram_indexes[i]:
+                    self.ngram_indexes[i].append(unk_idx)
 
                 for ngram in ngrams(chars, i):
                     # Add all characters to frequencies dict

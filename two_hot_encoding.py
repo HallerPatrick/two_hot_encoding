@@ -1,3 +1,5 @@
+from functools import lru_cache
+
 import torch
 
 import torch.nn.functional as F
@@ -34,15 +36,30 @@ def n_hot(t, num_clases):
     return ret
 
 
+# @lru_cache(maxsize=5)
+# def soft_dist(n):
+#     a = torch.tensor([1.0 / i for i in range(1, n + 1)])
+#     return F.normalize(a, dim=0)
+
+
+@lru_cache(maxsize=5)
+def soft_dist(n):
+    return [0.7, 0.3]
+
+
 def soft_n_hot(input, num_classes):
-    soft_dist = 1 / input.size(0)
+    # soft_dist = 1 / input.size(0)
+
     shape = list(input.size())[1:]
 
     shape.append(num_classes)
+
     ret = torch.zeros(shape).to(input.device)
 
-    for t in input:
-        ret.scatter_(-1, t.unsqueeze(-1), soft_dist)
+    soft_labels = soft_dist(input.size()[0])
+
+    for i, t in enumerate(input):
+        ret.scatter_(-1, t.unsqueeze(-1), soft_labels[i])
 
     return ret
 

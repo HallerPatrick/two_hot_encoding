@@ -90,7 +90,7 @@ def run_train(args):
     # Load data
     ###############################################################################
 
-    corpus = data.Corpus(args.data, args.ngrams, args.unk_t)
+    corpus = data.Corpus(args.data, device, args.ngrams, args.unk_t)
 
     print(f"Dictionary Size: {len(corpus.dictionary)}")
 
@@ -104,21 +104,17 @@ def run_train(args):
     ###############################################################################
 
     ntokens = len(corpus.dictionary)
-    if args.model == "Transformer":
-        model = _model.TransformerModel(
-            ntokens, args.emsize, args.nhead, args.nhid, args.nlayers, args.dropout
-        ).to(device)
-    else:
-        model = _model.RNNModel(
-            args.model,
-            ntokens,
-            args.emsize,
-            args.nhid,
-            args.nlayers,
-            args.ngrams,
-            args.dropout,
-            args.tied,
-        ).to(device)
+
+    model = _model.RNNModel(
+        args.model,
+        ntokens,
+        args.emsize,
+        args.nhid,
+        args.nlayers,
+        args.ngrams,
+        args.dropout,
+        args.tied,
+    ).to(device)
 
     criterion = CrossEntropyLossSoft()
 
@@ -130,21 +126,19 @@ def run_train(args):
         model.eval()
         total_loss = 0.0
         ntokens = len(corpus.dictionary)
-        if args.model != "Transformer":
-            hidden = model.init_hidden(eval_batch_size)
+
+        hidden = model.init_hidden(eval_batch_size)
 
         with torch.no_grad():
             for i in range(0, data_source.size(1) - args.ngrams, args.bptt):
                 data, targets = get_batch(data_source, i)
                 targets = soft_n_hot(targets, ntokens)
-                if args.model == "Transformer":
-                    output = model(data)
-                    output = output.view(-1, ntokens)
-                else:
-                    output, hidden = model(data, hidden)
-                    hidden = repackage_hidden(hidden)
+
+                output, hidden = model(data, hidden)
+                hidden = repackage_hidden(hidden)
+
+                # Perplexity only based on unigram candidates
                 if args.unigram_ppl:
-                    # TODO: Only consider only_unigrams
                     output = torch.index_select(
                         output, 1, torch.tensor(corpus.ngram_indexes[1])
                     )
@@ -184,11 +178,11 @@ def run_train(args):
             # print("Data unigram")
             # corpus.display_text(data[0][:, :1])
             # print("Target unigram")
-            # corpus.display_text(targets[0][::5])
+            # corpus.display_text(targets[0][:: args.batch_size])
             # print("Data bigram")
             # corpus.display_text(data[1][:, :1])
             # print("Target unigram")
-            # corpus.display_text(targets[1][::5])
+            # corpus.display_text(targets[1][:: args.batch_size])
 
             targets = soft_n_hot(targets, ntokens)
 
