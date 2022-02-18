@@ -72,7 +72,7 @@ with open(args.outf, "w") as outf:
             output = output[-1]
 
             if args.temperature == 0.0:
-                output = F.softmax(output, dim=0)
+                output = F.softmax(output, dim=0).cpu()
                 # Just get highest confidence
                 ngram_idx = torch.argmax(output)
             else:
