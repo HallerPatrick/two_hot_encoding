@@ -45,9 +45,9 @@ class Corpus:
 
         self.dictionary = Dictionary()
 
-        self.train = self.tokenize(os.path.join(path, "train.txt"))
-        self.valid = self.tokenize(os.path.join(path, "valid.txt"))
-        self.test = self.tokenize(os.path.join(path, "test.txt"))
+        self.train = self.tokenize_file(os.path.join(path, "train.txt"))
+        self.valid = self.tokenize_file(os.path.join(path, "valid.txt"))
+        self.test = self.tokenize_file(os.path.join(path, "test.txt"))
 
     def display_text(self, t):
         for a in t:
@@ -106,15 +106,18 @@ class Corpus:
                 if idx not in self.ngram_indexes[len(sanit_token)]:
                     self.ngram_indexes[len(sanit_token)].append(idx)
 
-    def tokenize(self, path):
-        """Tokenizes a text file."""
-
+    def tokenize_file(self, path):
         # Add words to the dictionary
         self.setup_dictionary(path)
 
         # Tokenize file content
         with open(path, "r", encoding="utf8") as f:
             lines = f.readlines()
+
+        return self.tokenize(lines)
+
+    def tokenize(self, lines: List[str], otf=False):
+        """Tokenizes lines of text"""
 
         n_gram_sequences = []
         min_length = sys.maxsize
@@ -123,12 +126,17 @@ class Corpus:
             idss_n = []
             for line in lines:
                 if n == 1:
-                    words = list(line) + ["<eos>"]
+
+                    if otf:
+                        words = list(line)
+                    else:
+                        words = list(line) + ["<eos>"]
                 else:
                     # Adding start offsets for all ngrams
                     words = ["<start>" for _ in range(1, n)]
                     words.extend(list(line))
-                    words.append("<eos>")
+                    if not otf:
+                        words.append("<eos>")
 
                 ids = []
                 length = 0
@@ -141,7 +149,7 @@ class Corpus:
 
                 idss_n.append(torch.tensor(ids).type(torch.int64))
 
-            # N-gram sequence
+            # N-gram sequence, [1, #tokens]
             seq = torch.cat(idss_n).unsqueeze(dim=0)
             length = seq.size(1)
 

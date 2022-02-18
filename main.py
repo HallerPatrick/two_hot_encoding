@@ -1,14 +1,9 @@
 # coding: utf-8
 import math
-from pprint import pprint
 import time
 from typing import Optional
 
-# from nltk.util import bigrams
-
 import torch
-import torch.onnx
-from torch.nn.modules.loss import NLLLoss
 
 import data
 import model as _model
@@ -173,16 +168,8 @@ def run_train(args):
                 output = output.view(-1, ntokens)
             else:
                 hidden = repackage_hidden(hidden)
-                output, hidden = model(data, hidden)
 
-            # print("Data unigram")
-            # corpus.display_text(data[0][:, :1])
-            # print("Target unigram")
-            # corpus.display_text(targets[0][:: args.batch_size])
-            # print("Data bigram")
-            # corpus.display_text(data[1][:, :1])
-            # print("Target unigram")
-            # corpus.display_text(targets[1][:: args.batch_size])
+                output, hidden = model(data, hidden)
 
             targets = soft_n_hot(targets, ntokens)
 
@@ -191,6 +178,7 @@ def run_train(args):
 
             # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
             torch.nn.utils.clip_grad_norm_(model.parameters(), args.clip)
+
             for p in model.parameters():
                 p.data.add_(p.grad, alpha=-lr)
 
