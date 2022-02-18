@@ -44,8 +44,7 @@ def n_hot(t, num_clases):
 
 @lru_cache(maxsize=5)
 def soft_dist(n):
-    # return [0.7, 0.3]
-    return [0.5, 0.5]
+    return [1 / n] * n
 
 
 def soft_n_hot(input, num_classes):
