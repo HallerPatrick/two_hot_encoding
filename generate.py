@@ -47,6 +47,14 @@ corpus = data.Corpus(args.data, device, model.ngrams, model.unk_t)
 
 ntokens = len(corpus.dictionary)
 
+# List of all indexes without UNK > 2 tokens
+if model.ngrams > 2:
+    unk_idxs = set(
+        [corpus.dictionary.word2idx[f"<{i}-UNK>"] for i in range(3, model.ngrams + 1)]
+    )
+    token_idxs = set(corpus.dictionary.word2idx.values())
+    token_idxs = torch.tensor(list(token_idxs.difference(unk_idxs)), dtype=torch.int64)
+
 # random first input
 input = torch.randint(ntokens, (model.ngrams, 1, 1), dtype=torch.long).to(device)
 
@@ -63,12 +71,17 @@ with open(args.outf, "w") as outf:
             # Only use the generated ngrams
             output = output[-1]
 
-            output = F.log_softmax(output, dim=0)
-
             if args.temperature == 0.0:
+                output = F.softmax(output, dim=0)
                 # Just get highest confidence
                 ngram_idx = torch.argmax(output)
             else:
+                output = F.log_softmax(output, dim=0)
+
+                # Remove all UNK tokens for ngram > 2
+                if model.ngrams > 2:
+                    output = torch.index_select(output, 0, token_idxs)
+
                 word_weights = output.squeeze().div(args.temperature).exp().cpu()
 
                 # multinomial over all tokens
@@ -80,8 +93,9 @@ with open(args.outf, "w") as outf:
             # Append to generated sequence
             generated_output = generated_output + word
 
-            # Use whole sequence as new input
-            input = corpus.tokenize([generated_output], otf=True).unsqueeze(dim=2)
+            # Use last 200 chars as sequence for new input
+            input = corpus.tokenize([generated_output[-200:]], otf=True).unsqueeze(
+                dim=2
+            )
 
-            # print(f"{repr(generated_output)}", flush=True, end="")
-            outf.write("({})".format(word))
+            outf.write(f"·{word}")
