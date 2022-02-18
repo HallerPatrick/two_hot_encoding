@@ -80,7 +80,7 @@ with open(args.outf, "w") as outf:
 
                 # Remove all UNK tokens for ngram > 2
                 if model.ngrams > 2:
-                    output = torch.index_select(output, 0, token_idxs)
+                    output = torch.index_select(output, 0, token_idxs).cpu()
 
                 word_weights = output.squeeze().div(args.temperature).exp().cpu()
 
