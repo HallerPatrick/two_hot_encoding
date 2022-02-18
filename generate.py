@@ -17,31 +17,6 @@ from main import batchify, get_batch
 args = argparser_generate()
 
 
-def get_best_ngrams(output, corpus, ngrams):
-
-    best_ngrams = []
-
-    for n in range(1, ngrams + 1):
-        highest_prob = 0.0
-        current_idx = -1
-
-        for i, prob in enumerate(output.view(-1)):
-            # For length comparison
-            token = corpus.dictionary.idx2word[i]
-
-            if token.startswith("<") and token.endswith(">"):
-                token = "i"
-
-            if len(token) == n:
-                if prob > highest_prob:
-                    highest_prob = prob
-                    current_idx = i
-
-        best_ngrams.append((current_idx, highest_prob))
-
-    return best_ngrams
-
-
 def display_prediction(prediction, corpus):
     prediction = F.softmax(prediction.view(-1), dim=0)
     preds = []
@@ -72,16 +47,8 @@ corpus = data.Corpus(args.data, device, model.ngrams, model.unk_t)
 
 ntokens = len(corpus.dictionary)
 
-# Hidden with batch size 1
-hidden = model.init_hidden(1)
-
 # random first input
 input = torch.randint(ntokens, (model.ngrams, 1, 1), dtype=torch.long).to(device)
-# print(corpus.dictionary.word2idx)
-# # input = torch.tensor(
-# #     [[[corpus.dictionary.word2idx["T"]]], [[corpus.dictionary.word2idx["<start>T"]]]]
-# # )
-# input = torch.tensor([[[corpus.dictionary.word2idx["T"]]]])
 
 generated_output = corpus.dictionary.idx2word[input[0][0].item()]
 
@@ -89,15 +56,17 @@ with open(args.outf, "w") as outf:
     with torch.no_grad():  # no tracking history
         for i in range(args.words):
 
-            # print("+" * 89)
+            # Reset hidden
             hidden = model.init_hidden(1)
             output, hidden = model(input, hidden)
+
+            # Only use the generated ngrams
             output = output[-1]
 
-            # display_prediction(output, corpus)
-            output = F.softmax(output, dim=0)
+            output = F.log_softmax(output, dim=0)
 
             if args.temperature == 0.0:
+                # Just get highest confidence
                 ngram_idx = torch.argmax(output)
             else:
                 word_weights = output.squeeze().div(args.temperature).exp().cpu()
@@ -105,11 +74,14 @@ with open(args.outf, "w") as outf:
                 # multinomial over all tokens
                 ngram_idx = torch.multinomial(word_weights, 1)[0]
 
+            # Get ngram word
             word = corpus.dictionary.idx2word[ngram_idx]
 
-            outf.write("({})".format(word))
+            # Append to generated sequence
             generated_output = generated_output + word
 
-            print(f"{repr(generated_output)}", flush=True, end="")
-
+            # Use whole sequence as new input
             input = corpus.tokenize([generated_output], otf=True).unsqueeze(dim=2)
+
+            # print(f"{repr(generated_output)}", flush=True, end="")
+            outf.write("({})".format(word))
