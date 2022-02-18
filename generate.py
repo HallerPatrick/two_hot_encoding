@@ -53,7 +53,9 @@ if model.ngrams > 2:
         [corpus.dictionary.word2idx[f"<{i}-UNK>"] for i in range(3, model.ngrams + 1)]
     )
     token_idxs = set(corpus.dictionary.word2idx.values())
-    token_idxs = torch.tensor(list(token_idxs.difference(unk_idxs)), dtype=torch.int64)
+    token_idxs = torch.tensor(
+        list(token_idxs.difference(unk_idxs)), dtype=torch.int64
+    ).to(device)
 
 # random first input
 input = torch.randint(ntokens, (model.ngrams, 1, 1), dtype=torch.long).to(device)
