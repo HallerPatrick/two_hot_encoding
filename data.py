@@ -88,13 +88,7 @@ class Corpus:
                     self.ngram_indexes[i].append(unk_idx)
 
                 for ngram in ngrams(chars, i):
-                    # Add all characters to frequencies dict
-                    for c in ngram:
-                        token_frequency[c] = -1
-
-                    if len(ngram) != 1:
-                        # For now only keep track of ngram frequencies
-                        token_frequency["".join(ngram)] += 1
+                    token_frequency["".join(ngram)] += 1
 
         self.dictionary.add_word("<start>")
         self.dictionary.add_word("<eos>")
