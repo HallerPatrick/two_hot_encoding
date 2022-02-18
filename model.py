@@ -17,6 +17,7 @@ class RNNModel(nn.Module):
         nhid: int,
         nlayers: int,
         ngrams: int,
+        unk_t: int,
         dropout=0.5,
         tie_weights=False,
     ):
@@ -24,6 +25,7 @@ class RNNModel(nn.Module):
         self.ntoken = ntoken
         self.encoder = NGramsEmbedding(ntoken, ninp)
         self.ngrams = ngrams
+        self.unk_t = unk_t
 
         if rnn_type in ["LSTM", "GRU"]:
             self.rnn = getattr(nn, rnn_type)(ninp, nhid, nlayers, dropout=dropout)

@@ -107,6 +107,7 @@ def run_train(args):
         args.nhid,
         args.nlayers,
         args.ngrams,
+        args.unk_t,
         args.dropout,
         args.tied,
     ).to(device)

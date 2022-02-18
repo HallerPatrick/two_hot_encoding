@@ -68,7 +68,7 @@ with open(args.checkpoint, "rb") as f:
 
 model.eval()
 
-corpus = data.Corpus(args.data, device, model.ngrams, args.unk_t)
+corpus = data.Corpus(args.data, device, model.ngrams, model.unk_t)
 
 ntokens = len(corpus.dictionary)
 
