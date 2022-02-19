@@ -77,7 +77,7 @@ class Corpus:
             lines = f.readlines()
 
         for line in lines:
-            chars = ["<start>"] + list(line) + ["<eos>"]
+            chars = ["<start>" for _ in range(1, self.ngrams)] + list(line) + ["<eos>"]
             for i in range(1, self.ngrams + 1):
                 # Add UNK token for ngram
                 n_unk_token = f"<{i}-UNK>"
@@ -111,7 +111,17 @@ class Corpus:
         return self.tokenize(lines)
 
     def tokenize(self, lines: List[str], otf=False):
-        """Tokenizes lines of text"""
+        """Tokenizes lines of text.
+
+        Parameters
+        ----------
+
+        lines: List[str]
+            List of strings, every string can represent a sentence or line of text.
+        otf: bool
+            On the Fly (oft) tokenization that leaves out the <eos> marker token,
+            used for text generating of not complete sentence
+        """
 
         n_gram_sequences = []
         min_length = sys.maxsize
@@ -119,18 +129,12 @@ class Corpus:
         for n in range(1, self.ngrams + 1):
             idss_n = []
             for line in lines:
-                if n == 1:
 
-                    if otf:
-                        words = list(line)
-                    else:
-                        words = list(line) + ["<eos>"]
-                else:
-                    # Adding start offsets for all ngrams
-                    words = ["<start>" for _ in range(1, n)]
-                    words.extend(list(line))
-                    if not otf:
-                        words.append("<eos>")
+                # Adding start offsets for all ngrams
+                words = ["<start>" for _ in range(1, n)]
+                words.extend(list(line))
+                if not otf:
+                    words.append("<eos>")
 
                 ids = []
                 length = 0

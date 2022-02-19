@@ -172,6 +172,21 @@ def run_train(args):
 
                 output, hidden = model(data, hidden)
 
+            # print("Data unigram")
+            # corpus.display_text(data[0][:, :1])
+            # print("Data bigram")
+            # corpus.display_text(data[1][:, :1])
+            # print("Data trigram")
+            # corpus.display_text(data[2][:, :1])
+            #
+            # print("Target unigram")
+            # corpus.display_text(targets[0][:: args.batch_size])
+            # print("Target bigram")
+            # corpus.display_text(targets[1][:: args.batch_size])
+            # print("Target trigram")
+            # corpus.display_text(targets[2][:: args.batch_size])
+            # exit()
+
             targets = soft_n_hot(targets, ntokens)
 
             loss = criterion(output, targets)
