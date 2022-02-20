@@ -276,7 +276,7 @@ def run_train(args):
 
     print("=" * 89)
     print(
-        "| End of training | test loss {:5.2f} | test ppl {:8.2f} | test bpc {:8.sf}".format(
+        "| End of training | test loss {:5.2f} | test ppl {:8.2f} | test bpc {:8.2f}".format(
             test_loss, math.exp(test_loss), test_loss * math.log(2)
         )
     )
