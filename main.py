@@ -111,8 +111,13 @@ def run_train(args):
         args.dropout,
         args.tied,
     ).to(device)
-
-    criterion = CrossEntropyLossSoft()
+    
+    weights = None # torch.ones((ntokens))
+    # for n, n_idxs in corpus.ngram_indexes.items():
+    #     for idxs in n_idxs:
+    #         weights[idxs] = n
+    
+    criterion = CrossEntropyLossSoft(weight=weights)
 
     ###############################################################################
     # Training code
@@ -145,6 +150,8 @@ def run_train(args):
                     total_loss += len(data[0]) * criterion(output, targets).item()
                 else:
                     total_loss += len(data[0]) * criterion(output, targets).item()
+                    # print(total_loss)
+                    # exit()
 
         return total_loss / (len(data_source[0]) - 1)
 
@@ -269,8 +276,8 @@ def run_train(args):
 
     print("=" * 89)
     print(
-        "| End of training | test loss {:5.2f} | test ppl {:8.2f}".format(
-            test_loss, math.exp(test_loss)
+        "| End of training | test loss {:5.2f} | test ppl {:8.2f} | test bpc {:8.sf}".format(
+            test_loss, math.exp(test_loss), test_loss * math.log(2)
         )
     )
     print("=" * 89)
