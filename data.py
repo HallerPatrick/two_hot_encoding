@@ -3,10 +3,12 @@ import sys
 
 from collections import Counter, defaultdict
 from pprint import pprint
+from pathlib import Path
 from typing import List
 
 import torch
 from nltk import ngrams
+from tqdm import tqdm
 
 
 class Dictionary:
@@ -45,9 +47,40 @@ class Corpus:
 
         self.dictionary = Dictionary()
 
-        self.train = self.tokenize_file(os.path.join(path, "train.txt"))
-        self.valid = self.tokenize_file(os.path.join(path, "valid.txt"))
-        self.test = self.tokenize_file(os.path.join(path, "test.txt"))
+        _path = Path(path)
+
+        # Use local datasets
+        if _path.is_dir():
+            self.train = self.tokenize_file(os.path.join(path, "train.txt"))
+            self.valid = self.tokenize_file(os.path.join(path, "valid.txt"))
+            self.test = self.tokenize_file(os.path.join(path, "test.txt"))
+        # Try loading from huggingface
+        else:
+            self.load_from_huggingface(path)
+    
+    def load_from_huggingface(self, path):
+            from datasets import load_dataset
+
+            name = path.split("/")
+
+            # Load dataset
+            dataset = load_dataset(*name)
+            train = dataset["train"]["text"]
+            valid = dataset["validation"]["text"]
+            test = dataset["test"]["text"]
+            
+            sets = [("train", train), ("valid", valid), ("test", test)]
+            dict_bar = tqdm(sets)
+            for n, data in dict_bar:
+                dict_bar.set_description(f"Setup Dictionary for split: {n}")
+                # Setup dictionariy
+                self._setup_dictionary(data)
+            
+            token_bar = tqdm(sets)
+            # Tokenize text
+            for n, data in token_bar:
+                token_bar.set_description(f"Tokenize text for for split: {n}")
+                setattr(self, n, self.tokenize(data))
 
     def display_text(self, t):
         for a in t:
@@ -71,12 +104,15 @@ class Corpus:
     def setup_dictionary(self, path):
         assert os.path.exists(path)
 
-        token_frequency = Counter()
-
         with open(path, "r") as f:
             lines = f.readlines()
 
-        for line in lines:
+        self._setup_dictionary(lines)
+
+    def _setup_dictionary(self, lines):
+        token_frequency = Counter()
+
+        for line in tqdm(lines):
             chars = ["<start>" for _ in range(1, self.ngrams)] + list(line) + ["<eos>"]
             for i in range(1, self.ngrams + 1):
                 # Add UNK token for ngram
@@ -126,9 +162,9 @@ class Corpus:
         n_gram_sequences = []
         min_length = sys.maxsize
 
-        for n in range(1, self.ngrams + 1):
+        for n in tqdm(range(1, self.ngrams + 1), desc=f"Tokenize for n-gram sequence"):
             idss_n = []
-            for line in lines:
+            for line in tqdm(lines):
 
                 # Adding start offsets for all ngrams
                 words = ["<start>" for _ in range(1, n)]
