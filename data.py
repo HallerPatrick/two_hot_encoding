@@ -33,7 +33,6 @@ class Dictionary:
     def __len__(self):
         return len(self.idx2word)
 
-
 class Corpus:
     def __init__(self, path, device="cpu", ngrams=2, unk_threshold=3):
 
