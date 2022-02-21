@@ -186,9 +186,9 @@ def train():
             cur_loss = total_loss / args.log_interval
             elapsed = time.time() - start_time
             print('| epoch {:3d} | {:5d}/{:5d} batches | lr {:02.2f} | ms/batch {:5.2f} | '
-                    'loss {:5.2f} | ppl {:8.2f}'.format(
+                    'loss {:5.2f} | ppl {:8.2f} | btc {:8.2f}'.format(
                 epoch, batch, len(train_data) // args.bptt, lr,
-                elapsed * 1000 / args.log_interval, cur_loss, math.exp(cur_loss)))
+                elapsed * 1000 / args.log_interval, cur_loss, math.exp(cur_loss), cur_loss / math.log(2)))
             total_loss = 0
             start_time = time.time()
         if args.dry_run:
@@ -215,8 +215,8 @@ try:
         val_loss = evaluate(val_data)
         print('-' * 89)
         print('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '
-                'valid ppl {:8.2f}'.format(epoch, (time.time() - epoch_start_time),
-                                           val_loss, math.exp(val_loss)))
+                'valid ppl {:8.2f} | valid btc {:8.2f}'.format(epoch, (time.time() - epoch_start_time),
+                                           val_loss, math.exp(val_loss), val_loss / math.log(2)))
         print('-' * 89)
         # Save the model if the validation loss is the best we've seen so far.
         if not best_val_loss or val_loss < best_val_loss:
@@ -242,8 +242,8 @@ with open(args.save, 'rb') as f:
 # Run on test data.
 test_loss = evaluate(test_data)
 print('=' * 89)
-print('| End of training | test loss {:5.2f} | test ppl {:8.2f}'.format(
-    test_loss, math.exp(test_loss)))
+print('| End of training | test loss {:5.2f} | test ppl {:8.2f} | test btc {:8.2f}'.format(
+    test_loss, math.exp(test_loss), test_loss / math.log(2)))
 print('=' * 89)
 
 if len(args.onnx_export) > 0:
