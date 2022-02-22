@@ -3,8 +3,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from flair.models import LanguageModel
-
 from two_hot_encoding import NGramsEmbedding
 
 
