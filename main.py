@@ -242,7 +242,7 @@ def run_train(args):
             print("-" * 96)
             print(
                 "| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | "
-                "valid ppl {:8.2f} | valid btc {:8.2f}".format(
+                "valid ppl {:8.2f} | valid bpc {:8.2f}".format(
                     epoch,
                     (time.time() - epoch_start_time),
                     val_loss,
