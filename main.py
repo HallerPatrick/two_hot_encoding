@@ -141,11 +141,11 @@ def run_train(args):
                 # Perplexity only based on unigram candidates
                 if args.unigram_ppl:
                     output = torch.index_select(
-                        output, 1, torch.tensor(corpus.ngram_indexes[1])
+                        output, 1, torch.tensor(corpus.ngram_indexes[1]).to(output.device)
                     )
 
                     targets = torch.index_select(
-                        targets, 1, torch.tensor(corpus.ngram_indexes[1])
+                        targets, 1, torch.tensor(corpus.ngram_indexes[1]).to(targets.device)
                     )
                     total_loss += len(data[0]) * criterion(output, targets).item()
                 else:
@@ -242,7 +242,7 @@ def run_train(args):
             print("-" * 96)
             print(
                 "| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | "
-                "valid ppl {:8.2f} | valid btc {:8.2f}".format(
+                "valid ppl {:8.2f} | valid bpc {:8.2f}".format(
                     epoch,
                     (time.time() - epoch_start_time),
                     val_loss,
@@ -277,7 +277,7 @@ def run_train(args):
     print("=" * 89)
     print(
         "| End of training | test loss {:5.2f} | test ppl {:8.2f} | test bpc {:8.2f}".format(
-            test_loss, math.exp(test_loss), test_loss * math.log(2)
+            test_loss, math.exp(test_loss), test_loss / math.log(2)
         )
     )
     print("=" * 89)

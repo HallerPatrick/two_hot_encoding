@@ -53,6 +53,11 @@ class Corpus:
             self.train = self.tokenize_file(os.path.join(path, "train.txt"))
             self.valid = self.tokenize_file(os.path.join(path, "valid.txt"))
             self.test = self.tokenize_file(os.path.join(path, "test.txt"))
+        elif "data/enwik8" in path:
+            prep_enwiki8()
+            self.train = self.tokenize_file(os.path.join(path, "train.txt"))
+            self.valid = self.tokenize_file(os.path.join(path, "valid.txt"))
+            self.test = self.tokenize_file(os.path.join(path, "test.txt"))
         # Try loading from huggingface
         else:
             self.load_from_huggingface(path)
@@ -201,3 +206,46 @@ class Corpus:
 def grouped(iterable, n):
     # s -> (s0,s1,s2,...sn-1), (sn,sn+1,sn+2,...s2n-1), (s2n,s2n+1,s2n+2,...s3n-1), ...
     return zip(*[iter(iterable)] * n)
+
+
+def prep_enwiki8():
+    # From: https://github.com/salesforce/awd-lstm-lm/blob/master/data/enwik8/prep_enwik8.py
+
+    import os
+    import sys
+    import zipfile
+    import requests
+
+
+    if os.path.exists('data/enwik8/train.txt'):
+        print('Tokenized enwik8 already exists - skipping processing')
+        sys.exit()
+
+    try:
+        data = zipfile.ZipFile('enwik8.zip').read('enwik8')
+    except:
+        r = requests.get("https://data.deepai.org/enwik8.zip", stream=True)
+        
+        with open("enwik8.zip", 'wb') as fd:
+            for chunk in r.iter_content(chunk_size=128):
+                fd.write(chunk)
+
+        data = zipfile.ZipFile('enwik8.zip').read('enwik8')
+
+    print('Length of enwik8: {}'.format(len(data)))
+
+    num_test_chars = 5000000
+
+    train_data = data[: -2 * num_test_chars]
+    valid_data = data[-2 * num_test_chars: -num_test_chars]
+    test_data = data[-num_test_chars:]
+
+    os.mkdir("data/enwik8")
+
+    for fn, part in [('data/enwik8/train.txt', train_data), ('data/enwik8/valid.txt', valid_data), ('data/enwik8/test.txt', test_data)]:
+        print('{} will have {} bytes'.format(fn, len(part)))
+        print('- Tokenizing...')
+        part_str = ' '.join([str(c) if c != ord('\n') else '\n' for c in part])
+        print('- Writing...')
+        f = open(fn, 'w').write(part_str)
+        f = open(fn + '.raw', 'wb').write(part)
