@@ -14,6 +14,9 @@ This is a WIP and will not accept PRs for now.
 
 ### Wikitext-2
 
-| Model | Emebdding Size | Epochs |
-| Character Level LSTM |
-| N-Gram CL LSTM |
+| Model | Emebdding Size | Hidden Size | BPTT | Batch Size | Epochs | Dataset | NGram | Test PPL | Test BPC |
+| Character Level LSTM | 128 | 128 | 35 | 50 | Wikitext-2 | 1 | 3.76 | 1.91
+| N-Gram CL LSTM | 128 | 128 | 35 | 50 | Wikitext-2 | 1 | 3.72 | 1.89
+| N-Gram CL LSTM | 128 | 128 | 35 | 50 | Wikitext-2 | 2 | 11.72 | 8.12
+| N-Gram CL LSTM | 128 | 128 | 35 | 50 | Wikitext-2 | 2 | 
+
