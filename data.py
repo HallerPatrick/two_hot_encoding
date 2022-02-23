@@ -78,13 +78,13 @@ class Corpus:
             for n, data in dict_bar:
                 dict_bar.set_description(f"Setup Dictionary for split: {n}")
                 # Setup dictionariy
-                self._setup_dictionary(data)
+                self._setup_dictionary(data, n)
             
             token_bar = tqdm(sets)
             # Tokenize text
             for n, data in token_bar:
                 token_bar.set_description(f"Tokenize text for for split: {n}")
-                setattr(self, n, self.tokenize(data))
+                setattr(self, n, self.tokenize(data, n))
 
     def display_text(self, t):
         for a in t:
@@ -111,12 +111,12 @@ class Corpus:
         with open(path, "r") as f:
             lines = f.readlines()
 
-        self._setup_dictionary(lines)
+        self._setup_dictionary(lines, path)
 
-    def _setup_dictionary(self, lines):
+    def _setup_dictionary(self, lines, label=""):
         token_frequency = Counter()
 
-        for line in tqdm(lines):
+        for line in tqdm(lines, desc=f"Setup dictionary for {label}"):
             chars = ["<start>" for _ in range(1, self.ngrams)] + list(line) + ["<eos>"]
             for i in range(1, self.ngrams + 1):
                 # Add UNK token for ngram
@@ -148,9 +148,9 @@ class Corpus:
         with open(path, "r", encoding="utf8") as f:
             lines = f.readlines()
 
-        return self.tokenize(lines)
+        return self.tokenize(lines, path)
 
-    def tokenize(self, lines: List[str], otf=False):
+    def tokenize(self, lines: List[str], label, otf=False):
         """Tokenizes lines of text.
 
         Parameters
@@ -166,9 +166,9 @@ class Corpus:
         n_gram_sequences = []
         min_length = sys.maxsize
 
-        for n in tqdm(range(1, self.ngrams + 1), desc=f"Tokenize for n-gram sequence"):
+        for n in range(1, self.ngrams + 1):
             idss_n = []
-            for line in tqdm(lines):
+            for line in tqdm(lines, desc=f"Tokenize for {n}-gram sequence for {label}"):
 
                 # Adding start offsets for all ngrams
                 words = ["<start>" for _ in range(1, n)]

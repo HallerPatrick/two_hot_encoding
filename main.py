@@ -10,7 +10,7 @@ import model as _model
 
 from args import argparser_train
 from loss import CrossEntropyLossSoft
-from torch_utils import export_onnx, repackage_hidden
+from torch_utils import count_parameters, export_onnx, repackage_hidden
 from two_hot_encoding import soft_n_hot
 
 
@@ -111,6 +111,8 @@ def run_train(args):
         args.dropout,
         args.tied,
     ).to(device)
+
+    count_parameters(model)
     
     weights = None # torch.ones((ntokens))
     # for n, n_idxs in corpus.ngram_indexes.items():

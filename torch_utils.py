@@ -1,5 +1,7 @@
 import os
 
+from prettytable import PrettyTable
+
 import torch
 
 
@@ -19,3 +21,18 @@ def export_onnx(model, path, batch_size, seq_len, device):
     )
     hidden = model.init_hidden(batch_size)
     torch.onnx.export(model, (dummy_input, hidden), path)
+
+
+
+def count_parameters(model):
+    table = PrettyTable(["Modules", "Parameters"])
+    total_params = 0
+    for name, parameter in model.named_parameters():
+        if not parameter.requires_grad: continue
+        params = parameter.numel()
+        table.add_row([name, params])
+        total_params+=params
+    print(table)
+    print(f"Total Trainable Params: {total_params}")
+    return total_params
+    
