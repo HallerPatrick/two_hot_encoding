@@ -10,64 +10,11 @@ import model as _model
 
 from args import argparser_train
 from loss import CrossEntropyLossSoft
-from torch_utils import count_parameters, export_onnx, repackage_hidden
+from torch_utils import batchify, count_parameters, export_onnx, get_batch, repackage_hidden
 from two_hot_encoding import soft_n_hot
 
 
 device: Optional[str] = None
-
-
-def batchify(data, bsz):
-    """
-    Starting from sequential data, batchify arranges the dataset into columns.
-    For instance, with the alphabet as the sequence and batch size 4, we'd get
-    ┌ a g m s ┐
-    │ b h n t │
-    │ c i o u │
-    │ d j p v │
-    │ e k q w │
-    └ f l r x ┘.
-    These columns are treated as independent by the model, which means that the
-    dependence of e. g. 'g' on 'f' can not be learned, but allows more efficient
-    batch processing.
-    Work out how cleanly we can divide the dataset into bsz parts.
-    """
-    ngrams = data.size(0)
-    nbatch = data.size()[-1] // bsz
-    # Trim off any extra elements that wouldn't cleanly fit (remainders).
-    data = data.narrow(1, 0, nbatch * bsz)
-    # Evenly divide the data across the bsz batches.
-    data = data.view(ngrams, bsz, -1)
-    data = torch.transpose(data, 1, 2).contiguous()
-    return data.to(device)
-
-
-def get_batch(source, i):
-    """
-    get_batch subdivides the source data into chunks of length args.bptt.
-    If source is equal to the example output of the batchify function, with
-    a bptt-limit of 2, we'd get the following two Variables for i = 0:
-    ┌ a g m s ┐ ┌ b h n t ┐
-    └ b h n t ┘ └ c i o u ┘
-    Note that despite the name of the function, the subdivison of data is not
-    done along the batch dimension (i.e. dimension 1), since that was handled
-    by the batchify function. The chunks are along dimension 0, corresponding
-    to the seq_len dimension in the LSTM.
-    """
-    ngrams = source.size(0)
-    seq_len = min(args.bptt, source.size(1) - ngrams - i)
-
-    # [ngram, sequnces, bsz]
-    data = source[:, i : i + seq_len]
-
-    targets = []
-    for ngram in range(1, ngrams + 1):
-        target = source[ngram - 1, i + ngram : i + ngram + seq_len]
-        targets.append(target.view(-1).unsqueeze(dim=0))
-
-    targets = torch.cat(targets)
-
-    return data, targets
 
 
 def run_train(args):
@@ -90,9 +37,9 @@ def run_train(args):
     print(f"Dictionary Size: {len(corpus.dictionary)}")
 
     eval_batch_size = 10
-    train_data = batchify(corpus.train, args.batch_size)
-    val_data = batchify(corpus.valid, eval_batch_size)
-    test_data = batchify(corpus.test, eval_batch_size)
+    train_data = batchify(corpus.train, args.batch_size, device)
+    val_data = batchify(corpus.valid, eval_batch_size, device)
+    test_data = batchify(corpus.test, eval_batch_size, device)
 
     ###############################################################################
     # Build the model
@@ -113,7 +60,8 @@ def run_train(args):
     ).to(device)
 
     count_parameters(model)
-    
+   
+    # TODO: Weighted loss labels?
     weights = None # torch.ones((ntokens))
     # for n, n_idxs in corpus.ngram_indexes.items():
     #     for idxs in n_idxs:
@@ -139,7 +87,7 @@ def run_train(args):
 
         with torch.no_grad():
             for i in range(0, data_source.size(1) - args.ngrams, args.bptt):
-                data, targets = get_batch(data_source, i)
+                data, targets = get_batch(data_source, i, args.bptt)
                 targets = soft_n_hot(targets, ntokens)
 
                 output, hidden = model(data, hidden)
@@ -173,7 +121,7 @@ def run_train(args):
         for batch, i in enumerate(
             range(0, train_data.size(1) - args.ngrams, args.bptt)
         ):
-            data, targets = get_batch(train_data, i)
+            data, targets = get_batch(train_data, i, args.bptt)
 
             # Starting each batch, we detach the hidden state from how it was previously produced.
             # If we didn't, the model would try backpropagating all the way to start of the dataset.
@@ -185,21 +133,6 @@ def run_train(args):
                 hidden = repackage_hidden(hidden)
 
                 output, hidden = model(data, hidden)
-
-            # print("Data unigram")
-            # corpus.display_text(data[0][:, :1])
-            # print("Data bigram")
-            # corpus.display_text(data[1][:, :1])
-            # print("Data trigram")
-            # corpus.display_text(data[2][:, :1])
-            #
-            # print("Target unigram")
-            # corpus.display_text(targets[0][:: args.batch_size])
-            # print("Target bigram")
-            # corpus.display_text(targets[1][:: args.batch_size])
-            # print("Target trigram")
-            # corpus.display_text(targets[2][:: args.batch_size])
-            # exit()
 
             targets = soft_n_hot(targets, ntokens)
 
@@ -219,7 +152,7 @@ def run_train(args):
                 cur_loss = total_loss / args.log_interval
                 elapsed = time.time() - start_time
                 print(
-                    "| epoch {:3d} | {:5d}/{:5d} batches | lr {:02.2f} | ms/batch {:5.2f} | "
+                    "| epoch {:3d} | {:5d}/{:5d} batches | lr {:02.5f} | ms/batch {:5.2f} | "
                     "loss {:5.2f} | ppl {:8.2f} | bpc {:8.2f}".format(
                         epoch,
                         batch,
@@ -237,7 +170,6 @@ def run_train(args):
                 break
 
     # Loop over epochs.
-    lr = args.lr
     best_val_loss = None
 
     # At any point you can hit Ctrl + C to break out of training early.

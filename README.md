@@ -26,18 +26,26 @@ This is a WIP and will not accept PRs for now.
 | Paper LSTM [^1] [^2] | 400 | 1840 | 200 | 128 | 50 | 3 | enwiki-8 | 4 (1/10 decay) | 1 | 1.232
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | N-Gram CL LSTM       | 200 | 1000 | 150 | 128 | 500 | 3 | ptb | 4 (1/4 decay) | 8.01 | 3.00
-| N-Gram CL LSTM       | 200 | 1000 | 150 | 128 | 500 | 3 | ptb | 4 (1/4 decay) | < 1.62 (only unigrams) | < 0.76 (only unigrams)
+| N-Gram CL LSTM       | 200 | 1000 | 150 | 128 | 500 | 3 | ptb | 4 (1/4 decay) | 1.60 (only unigrams) | 0.68 (only unigrams) (no optimizer)
+| N-Gram CL LSTM       | 200 | 1000 | 150 | 128 | 69 | 3 | ptb | 0.002 | 1.56 (only unigrams) | 0.64 (only unigrams) 
 | Paper LSTM [^1] [^2] | 400 | 1000 | 150 | 128 | 500 | 3 | ptb | 0.001 (1/10 decay) | 1 | 1.232
 
 
 
 ### Model and Corpus train/size metrics
 
+
+Investigate the dictionary size, the models size aswell as memory usage and training time
+for different n-grams and UNK threshold
+
+_Hyperparamter_:
+```
 Hidden size: 128
 emsize: 128
 nlayers: 2
 batch size: 50
 lr: 20
+```
 
 
 | Dataset | UNK  | Ngram | sec/epoch | dictionary size | GPU memory usage | Params |
@@ -55,84 +63,8 @@ lr: 20
 
 ### Plot for Wikitet-2
 
-``` chart
-{
-  "type": "bar",
-  "data": {
-    "labels": [
-      "1 (UNK=0)",
-      "2 (UNK=5)",
-      "3 (UNK=40)",
-      "4 (UNK=40)",
-      "5 (UNK=40)",
-      "10 (UNK=100)"
-    ],
-    "datasets": [
-      {
-        "label": "Dictionary Size",
-        "data": [
-            1156,
-            2754,
-            9827,
-            34124,
-            72745,
-            90250
-        ],
-        "backgroundColor": [
-          "rgba(255, 99, 132, 0.2)",
-          "rgba(255, 159, 64, 0.2)",
-          "rgba(255, 205, 86, 0.2)",
-          "rgba(75, 192, 192, 0.2)",
-          "rgba(54, 162, 235, 0.2)",
-          "rgba(153, 102, 255, 0.2)",
-          "rgba(201, 203, 207, 0.2)"
-        ]
-      },
-      {
-        "label": "GPU Memory Usage (MiB)",
-        "data": [
-            2553,
-            2817,
-            3301,
-            4723,
-            6765,
-            8635
-        ],
-        "backgroundColor": [
-          "rgba(255, 99, 132, 0.5)",
-          "rgba(255, 159, 64, 0.5)",
-          "rgba(255, 205, 86, 0.5)",
-          "rgba(75, 192, 192, 0.5)",
-          "rgba(54, 162, 235, 0.5)",
-          "rgba(153, 102, 255, 0.5)",
-          "rgba(201, 203, 207, 0.5)"
-        ]
-      },
-      {
-        "label": "Speed (sec/epoch)",
-        "data": [
-            43,
-            67,
-            143,
-            412,
-            782,
-            965
-        ],
-        "backgroundColor": [
-          "rgba(255, 99, 132, 0.9)",
-          "rgba(255, 159, 64, 0.9)",
-          "rgba(255, 205, 86, 0.9)",
-          "rgba(75, 192, 192, 0.9)",
-          "rgba(54, 162, 235, 0.9)",
-          "rgba(153, 102, 255, 0.9)",
-          "rgba(201, 203, 207, 0.9)"
-        ]
-      }
-    ]
-  },
-  "options": {}
-}
-```
+![Memory usage and model size](./table1.png)
+
 
 [^1]: https://arxiv.org/pdf/1803.08240.pdf
 [^2]: https://github.com/salesforce/awd-lstm-lm
