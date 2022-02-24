@@ -96,7 +96,7 @@ with open(args.outf, "w") as outf:
             generated_output = generated_output + word
 
             # Use last 200 chars as sequence for new input
-            input = corpus.tokenize([generated_output[-200:]], otf=True).unsqueeze(
+            input = corpus.tokenize([generated_output[-200:]], otf=True, label="Tokenize generated output").unsqueeze(
                 dim=2
             )
 

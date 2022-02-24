@@ -119,5 +119,18 @@ def argparser_train():
     parser.add_argument(
         "--dry-run", action="store_true", help="verify the code and the model"
     )
+    parser.add_argument(
+        "--optimizer",
+        type=str,
+        default="adam",
+        help="optimizer for training [adam, sgd]",
+    )
+
+    parser.add_argument(
+        "--wdecay",
+        type=float,
+        default=1.2e-6,
+        help="weight decay applied to all weights",
+    )
 
     return parser.parse_args()

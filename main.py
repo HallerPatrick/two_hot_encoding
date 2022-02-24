@@ -120,6 +120,11 @@ def run_train(args):
     #         weights[idxs] = n
     
     criterion = CrossEntropyLossSoft(weight=weights)
+    
+    if args.optimizer == "adam":
+        optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.wdecay)
+    elif args.optimizer == "sgd":
+        optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, weight_decay=args.wdecay)
 
     ###############################################################################
     # Training code
@@ -205,8 +210,9 @@ def run_train(args):
             torch.nn.utils.clip_grad_norm_(model.parameters(), args.clip)
 
             for p in model.parameters():
-                p.data.add_(p.grad, alpha=-lr)
-
+                p.data.add_(p.grad, alpha=-optimizer.param_groups[0]["lr"])
+            
+            optimizer.step()
             total_loss += loss.item()
 
             if batch % args.log_interval == 0 and batch > 0:
@@ -218,7 +224,7 @@ def run_train(args):
                         epoch,
                         batch,
                         len(train_data[0]) // args.bptt,
-                        lr,
+                        optimizer.param_groups[0]["lr"],
                         elapsed * 1000 / args.log_interval,
                         cur_loss,
                         math.exp(cur_loss),
@@ -259,8 +265,8 @@ def run_train(args):
                     torch.save(model, f)
                 best_val_loss = val_loss
             else:
-                # Anneal the learning rate if no improvement has been seen in the validation dataset.
-                lr /= 4.0
+                optimizer.param_groups[0]["lr"] /= 10.0
+
     except KeyboardInterrupt:
         print("-" * 89)
         print("Exiting from training early")

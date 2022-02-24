@@ -15,18 +15,23 @@ This is a WIP and will not accept PRs for now.
 
 | Model | Emebdding Size | Hidden Size | BPTT | Batch Size | Epochs | Layers | Dataset | LR | NGram | Test PPL | Test BPC |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Character Level LSTM | 128 | 128  | 35  | 50 | 30 | 2 | Wikitext-2 | 20 (1/4 decay) | 1 | 3.76 | 1.91
+| CL LSTM | 128 | 128  | 35  | 50 | 30 | 2 | Wikitext-2 | 20 (1/4 decay) | 1 | 3.76 | 1.91
 | N-Gram CL LSTM       | 128 | 128  | 35  | 50 | 30 | 2 | Wikitext-2 | 20 (1/4 decay) | 1 | 3.72 | 1.89
 | N-Gram CL LSTM       | 128 | 128  | 35  | 50 | 30 | 2 | Wikitext-2 | 20 (1/4 decay) | 2 | 11.72 | 8.12
 | N-Gram CL LSTM       | 128 | 128  | 35  | 50 | 30 | 2 | Wikitext-2 | 20 (1/4 decay) | 2 | 1.96 (only unigrams) | 0.47 (only unigrams)
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | N-Gram CL LSTM       | 512 | 512 | 200 | 50 | 34 | 2 | Wikitext-103 | 20 (1/4 decay) | 2 | 7.96 | 2.98
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | N-Gram CL LSTM       | 400 | 1840 | 200 | 128 | 50 | 3 | enwiki-8 | 0.001 (1/4 decay) | 
-| N-Gram CL LSTM       | 200 | 1000 | 150 | 128 | 500 | 3 | ptb | 0.001 (1/4 decay) | 8.01 | 3.00
-| N-Gram CL LSTM       | 200 | 1000 | 150 | 128 | 500 | 3 | ptb | 0.001 (1/4 decay) | < 1.62 (only unigrams) | 0.76 (only unigrams)
 | Paper LSTM [^1] [^2] | 400 | 1840 | 200 | 128 | 50 | 3 | enwiki-8 | 4 (1/10 decay) | 1 | 1.232
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| N-Gram CL LSTM       | 200 | 1000 | 150 | 128 | 500 | 3 | ptb | 4 (1/4 decay) | 8.01 | 3.00
+| N-Gram CL LSTM       | 200 | 1000 | 150 | 128 | 500 | 3 | ptb | 4 (1/4 decay) | < 1.62 (only unigrams) | < 0.76 (only unigrams)
+| Paper LSTM [^1] [^2] | 400 | 1000 | 150 | 128 | 500 | 3 | ptb | 0.001 (1/10 decay) | 1 | 1.232
 
 
-### Model metrics
+
+### Model and Corpus train/size metrics
 
 Hidden size: 128
 emsize: 128
@@ -45,15 +50,89 @@ lr: 20
 | Wiki-2  | 40   | 4     | 412       | 34124           | 4723 MiB         | 9034060
 | Wiki-2  | 40   | 5     | 782       | 72745           | 6765  MiB        | 18959657
 | Wiki-2  | 100  | 10    | 965       | 90250           | 8635  MiB        | 23458442
-| enwik8  | 20   | 2     | 4493         |            |  13 GiB      | 120M
 | ptb  | 20   | 2     | 31         | 704           | 4893 MiB      | 21669504
+| enwik8  | 20   | 2     | 4493         |            |  13 GiB      | 120M
 
+### Plot for Wikitet-2
 
-## Questions:
-
-* PPL Measurment
-* Optimizer?
-* Choice of hyperparameter (lr, hidden size) of safes force models
+``` chart
+{
+  "type": "bar",
+  "data": {
+    "labels": [
+      "1 (UNK=0)",
+      "2 (UNK=5)",
+      "3 (UNK=40)",
+      "4 (UNK=40)",
+      "5 (UNK=40)",
+      "10 (UNK=100)"
+    ],
+    "datasets": [
+      {
+        "label": "Dictionary Size",
+        "data": [
+            1156,
+            2754,
+            9827,
+            34124,
+            72745,
+            90250
+        ],
+        "backgroundColor": [
+          "rgba(255, 99, 132, 0.2)",
+          "rgba(255, 159, 64, 0.2)",
+          "rgba(255, 205, 86, 0.2)",
+          "rgba(75, 192, 192, 0.2)",
+          "rgba(54, 162, 235, 0.2)",
+          "rgba(153, 102, 255, 0.2)",
+          "rgba(201, 203, 207, 0.2)"
+        ]
+      },
+      {
+        "label": "GPU Memory Usage (MiB)",
+        "data": [
+            2553,
+            2817,
+            3301,
+            4723,
+            6765,
+            8635
+        ],
+        "backgroundColor": [
+          "rgba(255, 99, 132, 0.5)",
+          "rgba(255, 159, 64, 0.5)",
+          "rgba(255, 205, 86, 0.5)",
+          "rgba(75, 192, 192, 0.5)",
+          "rgba(54, 162, 235, 0.5)",
+          "rgba(153, 102, 255, 0.5)",
+          "rgba(201, 203, 207, 0.5)"
+        ]
+      },
+      {
+        "label": "Speed (sec/epoch)",
+        "data": [
+            43,
+            67,
+            143,
+            412,
+            782,
+            965
+        ],
+        "backgroundColor": [
+          "rgba(255, 99, 132, 0.9)",
+          "rgba(255, 159, 64, 0.9)",
+          "rgba(255, 205, 86, 0.9)",
+          "rgba(75, 192, 192, 0.9)",
+          "rgba(54, 162, 235, 0.9)",
+          "rgba(153, 102, 255, 0.9)",
+          "rgba(201, 203, 207, 0.9)"
+        ]
+      }
+    ]
+  },
+  "options": {}
+}
+```
 
 [^1]: https://arxiv.org/pdf/1803.08240.pdf
 [^2]: https://github.com/salesforce/awd-lstm-lm
