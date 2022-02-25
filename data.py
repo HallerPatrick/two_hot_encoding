@@ -84,7 +84,7 @@ class Corpus:
             # Tokenize text
             for n, data in token_bar:
                 token_bar.set_description(f"Tokenize text for for split: {n}")
-                setattr(self, n, self.tokenize(data, n))
+                setattr(self, n, tokenize(self.dictionary, data, n, self.ngrams, False, self.device))
 
     def display_text(self, t):
         for a in t:
@@ -148,60 +148,60 @@ class Corpus:
         with open(path, "r", encoding="utf8") as f:
             lines = f.readlines()
 
-        return self.tokenize(lines, path)
+        return tokenize(self.dictionary, lines, path, self.ngrams, False, self.device)
 
-    def tokenize(self, lines: List[str], label, otf=False):
-        """Tokenizes lines of text.
 
-        Parameters
-        ----------
+def tokenize(dictionary, lines: List[str], label, ngram, otf=False, device="cpu"):
+    """Tokenizes lines of text.
 
-        lines: List[str]
-            List of strings, every string can represent a sentence or line of text.
-        otf: bool
-            On the Fly (oft) tokenization that leaves out the <eos> marker token,
-            used for text generating of not complete sentence
-        """
+    Parameters
+    ----------
 
-        n_gram_sequences = []
-        min_length = sys.maxsize
+    lines: List[str]
+        List of strings, every string can represent a sentence or line of text.
+    otf: bool
+        On the Fly (oft) tokenization that leaves out the <eos> marker token,
+        used for text generating of not complete sentence
+    """
 
-        for n in range(1, self.ngrams + 1):
-            idss_n = []
-            for line in tqdm(lines, desc=f"Tokenize for {n}-gram sequence for {label}"):
+    n_gram_sequences = []
+    min_length = sys.maxsize
 
-                # Adding start offsets for all ngrams
-                words = ["<start>" for _ in range(1, n)]
-                words.extend(list(line))
-                if not otf:
-                    words.append("<eos>")
+    for n in range(1, ngram + 1):
+        idss_n = []
+        for line in tqdm(lines, desc=f"Tokenize for {n}-gram sequence for {label}"):
 
-                ids = []
-                length = 0
-                for i, word in enumerate(ngrams(words, n)):
-                    try:
-                        ids.append(self.dictionary.word2idx["".join(word)])
-                    except KeyError:
-                        ids.append(self.dictionary.word2idx[f"<{n}-UNK>"])
-                    length += 1
+            # Adding start offsets for all ngrams
+            words = ["<start>" for _ in range(1, n)]
+            words.extend(list(line))
+            if not otf:
+                words.append("<eos>")
 
-                idss_n.append(torch.tensor(ids).type(torch.int64))
+            ids = []
+            length = 0
+            for i, word in enumerate(ngrams(words, n)):
+                try:
+                    ids.append(dictionary.word2idx["".join(word)])
+                except KeyError:
+                    ids.append(dictionary.word2idx[f"<{n}-UNK>"])
+                length += 1
 
-            # N-gram sequence, [1, #tokens]
-            seq = torch.cat(idss_n).unsqueeze(dim=0)
-            length = seq.size(1)
+            idss_n.append(torch.tensor(ids).type(torch.int64))
 
-            if length < min_length:
-                min_length = length
+        # N-gram sequence, [1, #tokens]
+        seq = torch.cat(idss_n).unsqueeze(dim=0)
+        length = seq.size(1)
 
-            n_gram_sequences.append(seq)
+        if length < min_length:
+            min_length = length
 
-        n_gram_sequences = torch.cat([t[:min_length] for t in n_gram_sequences]).to(
-            self.device
-        )
+        n_gram_sequences.append(seq)
 
-        return n_gram_sequences
+    n_gram_sequences = torch.cat([t[:min_length] for t in n_gram_sequences]).to(
+        device
+    )
 
+    return n_gram_sequences
 
 def grouped(iterable, n):
     # s -> (s0,s1,s2,...sn-1), (sn,sn+1,sn+2,...s2n-1), (s2n,s2n+1,s2n+2,...s3n-1), ...
