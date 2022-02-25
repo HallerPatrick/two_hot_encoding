@@ -1,6 +1,10 @@
 #include <ATen/ATen.h>
 #include <torch/extension.h>
 
+#include <iostream>
+using namespace std;
+
+
 namespace at {
 namespace native {
 
@@ -42,11 +46,12 @@ Tensor n_hot(const Tensor &self, int64_t num_classes) {
 
   shape.push_back(num_classes);
 
-  Tensor ret = at::zeros(shape, self.options());
+  Tensor ret = at::zeros(shape);
+
 
   for(int i = 0; i < self.size(0); i++) {
     // use the accessor foo_a to get tensor data.
-    ret.scatter_(-1, self[i], 1);
+    ret.scatter_(-1, self[i].unsqueeze(-1), 1);
   }
 
   return ret;
@@ -55,5 +60,5 @@ Tensor n_hot(const Tensor &self, int64_t num_classes) {
 } // namespace at
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-  m.def("ngram", &at::native::n_hot, "N Hot Encoding");
+  m.def("n_hot", &at::native::n_hot, "N Hot Encoding");
 } 
