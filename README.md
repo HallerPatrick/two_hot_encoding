@@ -22,11 +22,11 @@ This is a WIP and will not accept PRs for now.
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | N-Gram CL LSTM       | 512 | 512 | 200 | 50 | 34 | 2 | Wikitext-103 | 20 (1/4 decay) | 2 | 7.96 | 2.98
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| N-Gram CL LSTM       | 400 | 1840 | 200 | 128 | 50 | 3 | enwiki-8 | 0.001 (1/4 decay) | 
-| Paper LSTM [^1] [^2] | 400 | 1840 | 200 | 128 | 50 | 3 | enwiki-8 | 4 (1/10 decay) | 1 | 1.232
+| N-Gram CL LSTM       | 400 | 1840 | 200 | 128 | 23 | 3 | enwiki-8 | 10 (1/4 decay) | 2 | 1.63 | 0.69
+| Paper LSTM [^1] [^2] | 400 | 1840 | 200 | 128 | 50 | 3 | enwiki-8 | 0.001 (1/10 decay) | 1 | - | 1.232
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| N-Gram CL LSTM       | 200 | 1000 | 150 | 128 | 500 | 3 | ptb | 4 (1/4 decay) | 8.01 | 3.00
-| N-Gram CL LSTM       | 200 | 1000 | 150 | 128 | 500 | 3 | ptb | 4 (1/4 decay) | 1.60 (only unigrams) | 0.68 (only unigrams) (no optimizer)
+| N-Gram CL LSTM       | 200 | 1000 | 150 | 128 | 500 | 3 | ptb | 4 (1/4 decay) | 2 | 8.01 | 3.00
+| N-Gram CL LSTM       | 200 | 1000 | 150 | 128 | 500 | 3 | ptb | 4 (1/4 decay) | 2 | 1.60 (only unigrams) | 0.68 (only unigrams) (no optimizer)
 | N-Gram CL LSTM       | 200 | 1000 | 150 | 128 | 69 | 3 | ptb | 0.002 | 1.56 (only unigrams) | 0.64 (only unigrams) 
 | Paper LSTM [^1] [^2] | 400 | 1000 | 150 | 128 | 500 | 3 | ptb | 0.001 (1/10 decay) | 1 | 1.232
 
