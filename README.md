@@ -58,7 +58,7 @@ lr: 20
 | Wiki-2  | 40   | 4     | 412       | 34124           | 4723 MiB         | 9034060
 | Wiki-2  | 40   | 5     | 782       | 72745           | 6765  MiB        | 18959657
 | Wiki-2  | 100  | 10    | 965       | 90250           | 8635  MiB        | 23458442
-| ptb  | 20   | 2     | 31         | 704           | 4893 MiB      | 21669504
+| ptb     | 20   | 2     | 31         | 704           | 4893 MiB      | 21669504
 | enwik8  | 20   | 2     | 4493         |            |  13 GiB      | 120M
 
 ### Plot for Wikitet-2
@@ -68,3 +68,11 @@ lr: 20
 
 [^1]: https://arxiv.org/pdf/1803.08240.pdf
 [^2]: https://github.com/salesforce/awd-lstm-lm
+
+
+# TODO:
+* [x] Corpus aus generate.py raus
+* [ ] Make CPP extension work
+* [ ] Build flair language model
+* [ ] Compare epoch time between bigram and uni gram model
+
