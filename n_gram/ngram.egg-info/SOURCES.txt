@@ -1,0 +1,6 @@
+ngram.cpp
+setup.py
+ngram.egg-info/PKG-INFO
+ngram.egg-info/SOURCES.txt
+ngram.egg-info/dependency_links.txt
+ngram.egg-info/top_level.txt

@@ -11,7 +11,7 @@ import model as _model
 from args import argparser_train
 from loss import CrossEntropyLossSoft
 from torch_utils import batchify, count_parameters, export_onnx, get_batch, repackage_hidden
-from two_hot_encoding import soft_n_hot
+from two_hot_encoding import soft_dist, soft_n_hot
 
 
 device: Optional[str] = None
@@ -50,6 +50,7 @@ def run_train(args):
     model = _model.RNNModel(
         args.model,
         ntokens,
+
         args.emsize,
         args.nhid,
         args.nlayers,
@@ -85,10 +86,12 @@ def run_train(args):
 
         hidden = model.init_hidden(eval_batch_size)
 
+        soft_labels = soft_dist(data_source.size()[0], device)
+
         with torch.no_grad():
             for i in range(0, data_source.size(1) - args.ngrams, args.bptt):
                 data, targets = get_batch(data_source, i, args.bptt)
-                targets = soft_n_hot(targets, ntokens)
+                targets = soft_n_hot(targets, ntokens, soft_labels)
 
                 output, hidden = model(data, hidden)
                 hidden = repackage_hidden(hidden)
@@ -116,6 +119,7 @@ def run_train(args):
         total_loss = 0.0
         start_time = time.time()
         ntokens = len(corpus.dictionary)
+        soft_labels = soft_dist(train_data.size()[0], device)
         if args.model != "Transformer":
             hidden = model.init_hidden(args.batch_size)
         for batch, i in enumerate(
@@ -134,7 +138,7 @@ def run_train(args):
 
                 output, hidden = model(data, hidden)
 
-            targets = soft_n_hot(targets, ntokens)
+            targets = soft_n_hot(targets, ntokens, soft_labels)
 
             loss = criterion(output, targets)
             loss.backward()

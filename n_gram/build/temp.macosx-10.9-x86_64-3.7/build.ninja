@@ -1,0 +1,20 @@
+ninja_required_version = 1.3
+cxx = c++
+
+cflags = -Wno-unused-result -Wsign-compare -Wunreachable-code -fno-common -dynamic -DNDEBUG -g -fwrapv -O3 -Wall -arch x86_64 -g -I/Users/patrickhaller/Projects/two_hot_encoding/venv/lib/python3.7/site-packages/torch/include -I/Users/patrickhaller/Projects/two_hot_encoding/venv/lib/python3.7/site-packages/torch/include/torch/csrc/api/include -I/Users/patrickhaller/Projects/two_hot_encoding/venv/lib/python3.7/site-packages/torch/include/TH -I/Users/patrickhaller/Projects/two_hot_encoding/venv/lib/python3.7/site-packages/torch/include/THC -I/Users/patrickhaller/Projects/two_hot_encoding/venv/include -I/Library/Frameworks/Python.framework/Versions/3.7/include/python3.7m -c
+post_cflags = -DTORCH_API_INCLUDE_EXTENSION_H '-DPYBIND11_COMPILER_TYPE="_clang"' '-DPYBIND11_STDLIB="_libcpp"' '-DPYBIND11_BUILD_ABI="_cxxabi1002"' -DTORCH_EXTENSION_NAME=ngram -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++14
+ldflags = 
+
+rule compile
+  command = $cxx -MMD -MF $out.d $cflags -c $in -o $out $post_cflags
+  depfile = $out.d
+  deps = gcc
+
+
+
+build /Users/patrickhaller/Projects/two_hot_encoding/n_gram/build/temp.macosx-10.9-x86_64-3.7/ngram.o: compile /Users/patrickhaller/Projects/two_hot_encoding/n_gram/ngram.cpp
+
+
+
+
+

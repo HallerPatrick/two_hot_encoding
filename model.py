@@ -124,3 +124,4 @@ class RNNModel(nn.Module):
 #             document_delimiter=document_delimiter,
 #             dropout=dropout,
 #         )
+

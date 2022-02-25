@@ -43,16 +43,16 @@ with open(args.checkpoint, "rb") as f:
 
 model.eval()
 
-corpus = data.Corpus(args.data, device, model.ngrams, model.unk_t)
+# corpus = data.Corpus(args.data, device, model.ngrams, model.unk_t)
 
-ntokens = len(corpus.dictionary)
+ntokens = model.ntoken
 
 # List of all indexes without UNK > 2 tokens
 if model.ngrams > 2:
     unk_idxs = set(
-        [corpus.dictionary.word2idx[f"<{i}-UNK>"] for i in range(3, model.ngrams + 1)]
+        [model.dictionary.word2idx[f"<{i}-UNK>"] for i in range(3, model.ngrams + 1)]
     )
-    token_idxs = set(corpus.dictionary.word2idx.values())
+    token_idxs = set(model.dictionary.word2idx.values())
     token_idxs = torch.tensor(
         list(token_idxs.difference(unk_idxs)), dtype=torch.int64
     ).to(device)
@@ -60,7 +60,7 @@ if model.ngrams > 2:
 # random first input
 input = torch.randint(ntokens, (model.ngrams, 1, 1), dtype=torch.long).to(device)
 
-generated_output = corpus.dictionary.idx2word[input[0][0].item()]
+generated_output = model.dictionary.idx2word[input[0][0].item()]
 
 with open(args.outf, "w") as outf:
     with torch.no_grad():  # no tracking history
@@ -90,13 +90,13 @@ with open(args.outf, "w") as outf:
                 ngram_idx = torch.multinomial(word_weights, 1)[0]
 
             # Get ngram word
-            word = corpus.dictionary.idx2word[ngram_idx]
+            word = model.dictionary.idx2word[ngram_idx]
 
             # Append to generated sequence
             generated_output = generated_output + word
 
             # Use last 200 chars as sequence for new input
-            input = corpus.tokenize([generated_output[-200:]], otf=True, label="Tokenize generated output").unsqueeze(
+            input = model.tokenize([generated_output[-200:]], otf=True, label="Tokenize generated output").unsqueeze(
                 dim=2
             )
 

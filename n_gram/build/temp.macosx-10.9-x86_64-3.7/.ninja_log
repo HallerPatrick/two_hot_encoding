@@ -1,0 +1,17 @@
+# ninja log v5
+0	12076	1645795410032589319	/Users/patrickhaller/Projects/two_hot_encoding/ngram/build/temp.macosx-10.9-x86_64-3.7/ngram.o	5f03d48b25e6c099
+3	10995	1645796276823586214	/Users/patrickhaller/Projects/two_hot_encoding/ngram/build/temp.macosx-10.9-x86_64-3.7/ngram.o	5f03d48b25e6c099
+3	10281	1645796439352258808	/Users/patrickhaller/Projects/two_hot_encoding/ngram/build/temp.macosx-10.9-x86_64-3.7/ngram.o	5f03d48b25e6c099
+2	11068	1645796714503928827	/Users/patrickhaller/Projects/two_hot_encoding/ngram/build/temp.macosx-10.9-x86_64-3.7/ngram.o	5f03d48b25e6c099
+3	11343	1645797460448795196	/Users/patrickhaller/Projects/two_hot_encoding/ngram/build/temp.macosx-10.9-x86_64-3.7/ngram.o	5f03d48b25e6c099
+3	10628	1645797751222412712	/Users/patrickhaller/Projects/two_hot_encoding/ngram/build/temp.macosx-10.9-x86_64-3.7/ngram.o	5f03d48b25e6c099
+3	10890	1645797809820544166	/Users/patrickhaller/Projects/two_hot_encoding/ngram/build/temp.macosx-10.9-x86_64-3.7/ngram.o	5f03d48b25e6c099
+3	11497	1645797969254982415	/Users/patrickhaller/Projects/two_hot_encoding/ngram/build/temp.macosx-10.9-x86_64-3.7/ngram.o	5f03d48b25e6c099
+6	12092	1645802814936851300	/Users/patrickhaller/Projects/two_hot_encoding/ngram/build/temp.macosx-10.9-x86_64-3.7/ngram.o	5f03d48b25e6c099
+3	10794	1645802938816150455	/Users/patrickhaller/Projects/two_hot_encoding/ngram/build/temp.macosx-10.9-x86_64-3.7/ngram.o	5f03d48b25e6c099
+3	10872	1645802992832754401	/Users/patrickhaller/Projects/two_hot_encoding/ngram/build/temp.macosx-10.9-x86_64-3.7/ngram.o	5f03d48b25e6c099
+3	10450	1645803031367018842	/Users/patrickhaller/Projects/two_hot_encoding/ngram/build/temp.macosx-10.9-x86_64-3.7/ngram.o	5f03d48b25e6c099
+3	12506	1645803137488039633	/Users/patrickhaller/Projects/two_hot_encoding/ngram/build/temp.macosx-10.9-x86_64-3.7/ngram.o	5f03d48b25e6c099
+3	11470	1645803233055749021	/Users/patrickhaller/Projects/two_hot_encoding/ngram/build/temp.macosx-10.9-x86_64-3.7/ngram.o	5f03d48b25e6c099
+2	10332	1645803301141062245	/Users/patrickhaller/Projects/two_hot_encoding/ngram/build/temp.macosx-10.9-x86_64-3.7/ngram.o	5f03d48b25e6c099
+3	10213	1645803823399535569	/Users/patrickhaller/Projects/two_hot_encoding/ngram/build/temp.macosx-10.9-x86_64-3.7/ngram.o	5f03d48b25e6c099
