@@ -47,17 +47,28 @@ def run_train(args):
 
     ntokens = len(corpus.dictionary)
 
+    # model = _model.RNNModel(
+    #     args.model,
+    #     ntokens,
+    #     args.emsize,
+    #     args.nhid,
+    #     args.nlayers,
+    #     args.ngrams,
+    #     args.unk_t,
+    #     args.dropout,
+    #     args.tied,
+    # ).to(device)
+
     model = _model.RNNModel(
-        args.model,
-        ntokens,
-        args.emsize,
-        args.nhid,
+        corpus.dictionary,
         args.nlayers,
         args.ngrams,
+        args.nhid,
         args.unk_t,
-        args.dropout,
-        args.tied,
-    ).to(device)
+        None,
+        args.emsize,
+        dropout=args.dropout,
+    )
 
     count_parameters(model)
    
@@ -89,7 +100,7 @@ def run_train(args):
             for i in range(0, data_source.size(1) - args.ngrams, args.bptt):
                 data, targets = get_batch(data_source, i, args.bptt)
                 targets = soft_n_hot(targets, ntokens)
-
+                
                 output, hidden = model(data, hidden)
                 hidden = repackage_hidden(hidden)
 
@@ -195,6 +206,9 @@ def run_train(args):
             if not best_val_loss or val_loss < best_val_loss:
                 with open(args.save, "wb") as f:
                     torch.save(model, f)
+
+                model.save("flair_" + args.save)
+
                 best_val_loss = val_loss
             else:
                 optimizer.param_groups[0]["lr"] /= 10.0
