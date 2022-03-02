@@ -66,7 +66,11 @@ with open(args.outf, "w") as outf:
 
             # Reset hidden
             hidden = model.init_hidden(1)
+            print(input.size())
             output, hidden = model(input, hidden)
+
+            print(hidden[0].size())
+
 
             # Only use the generated ngrams
             output = output[-1]

@@ -198,10 +198,75 @@ class Corpus:
         with open(path, "r", encoding="utf8") as f:
             lines = f.readlines()
 
-        return tokenize(self.dictionary, lines, path, self.ngrams, False, self.device)
+        return tokenize(self.dictionary, lines, self.ngrams, path, False, self.device)
+
+def tokenize_batch(dictionary, lines: List[str], ngram, label=None, otf=False, device="cpu"):
+    """Tokenizes lines of text. Number of lines is already number of batches.
+
+    Parameters
+    ----------
+
+    lines: List[str]
+        List of strings, every string can represent a sentence or line of text.
+    otf: bool
+        On the Fly (oft) tokenization that leaves out the <eos> marker token,
+        used for text generating of not complete sentence
+    """
 
 
-def tokenize(dictionary, lines: List[str], label, ngram, otf=False, device="cpu"):
+    n_gram_sequences = []
+
+    padding_char_index = dictionary.get_idx_for_item(" ")
+
+    len_longest_chunk: int = 0
+
+    for n in range(1, ngram + 1):
+        idss_n = []
+
+        _lines = tqdm(lines, desc=f"Tokenize for {n}-gram sequence for {label}") if label else lines
+        for line in _lines:
+
+            # Adding start offsets for all ngrams
+            words = ["<start>" for _ in range(1, n)]
+            words.extend(list(line))
+            if not otf:
+                words.append("<eos>")
+
+            ids = []
+            length = 0
+            for i, word in enumerate(ngrams(words, n)):
+                try:
+                    ids.append(dictionary.word2idx["".join(word)])
+                except KeyError:
+                    ids.append(dictionary.word2idx[f"<{n}-UNK>"])
+                length += 1
+
+            if len(ids) > len_longest_chunk:
+                len_longest_chunk = len(ids)
+
+            
+            idss_n.append(ids)
+
+        n_gram_sequences.append(idss_n)
+
+    padded_char_sequence = []
+    for i, ls in enumerate(n_gram_sequences):
+        new_lines = []
+        for j, line in enumerate(ls):
+            line += [padding_char_index] * (len_longest_chunk - len(line))
+            new_lines.append(torch.tensor(line).type(torch.int64))
+        
+        seq = torch.cat(new_lines).unsqueeze(dim=0)
+
+        padded_char_sequence.append(seq)
+
+    n_gram_sequences = torch.cat([torch.tensor(t) for t in padded_char_sequence]).to(
+        device
+    )
+
+    return n_gram_sequences
+
+def tokenize(dictionary, lines: List[str], ngram, label, otf=False, device="cpu"):
     """Tokenizes lines of text.
 
     Parameters
@@ -219,7 +284,10 @@ def tokenize(dictionary, lines: List[str], label, ngram, otf=False, device="cpu"
 
     for n in range(1, ngram + 1):
         idss_n = []
-        for line in tqdm(lines, desc=f"Tokenize for {n}-gram sequence for {label}"):
+
+        _lines = tqdm(lines, desc=f"Tokenize for {n}-gram sequence for {label}") if label else lines
+
+        for line in _lines:
 
             # Adding start offsets for all ngrams
             words = ["<start>" for _ in range(1, n)]
@@ -237,7 +305,7 @@ def tokenize(dictionary, lines: List[str], label, ngram, otf=False, device="cpu"
                 length += 1
 
             idss_n.append(torch.tensor(ids).type(torch.int64))
-
+            
         # N-gram sequence, [1, #tokens]
         seq = torch.cat(idss_n).unsqueeze(dim=0)
         length = seq.size(1)
