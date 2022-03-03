@@ -76,9 +76,19 @@ class RNNModel(nn.Module):
         output, hidden = self.rnn(emb, hidden)
         decoded = self.decoder(output)
         decoded = decoded.view(-1, self.ntoken)
+
+        # print("NATIVE: ")
+        print(input.size())
+        # for a in input[0]:
+        #     print(repr(self.dictionary.idx2word[a.item()]), end="")
+        # print()
+        # print(output.size())
+        # print(hidden[0].size())
+        # print(hidden[1].size())
         return decoded, hidden
 
     def forward2(self, input, hidden, ordered_sequence_lengths=None):
+
         encoded = self.encoder(input)
 
         self.rnn.flatten_parameters()
@@ -92,6 +102,15 @@ class RNNModel(nn.Module):
         decoded = self.decoder(
             output.view(output.size(0) * output.size(1), output.size(2))
         )
+
+        print("FLAIR: ")
+        print(input.size())
+        for a in input[0]:
+            print(repr(self.dictionary.idx2word[a.item()]), end="")
+        print()
+        # print(output.size())
+        # print(hidden[0].size())
+        # print(hidden[1].size())
 
         return (
             decoded.view(output.size(0), output.size(1), decoded.size(1)),
@@ -194,7 +213,7 @@ class RNNModel(nn.Module):
 
             padded = f"{start_marker}{string}{end_marker}"
             padded_strings.append(padded)
-        
+
         # cut up the input into chunks of max charlength = chunk_size
         chunks = []
         splice_begin = 0
@@ -206,7 +225,7 @@ class RNNModel(nn.Module):
         chunks.append(
             [text[splice_begin:longest_padded_str] for text in padded_strings]
         )
-        
+
         hidden = self.init_hidden(len(chunks[0]))
 
         batches: List[torch.Tensor] = []
@@ -220,7 +239,8 @@ class RNNModel(nn.Module):
                 chars = list(string) + [" "] * (len_longest_chunk - len(string))
 
                 # [ngram, 1, sequence]
-                n_gram_char_indices = tokenize_batch(self.dictionary, chars, self.ngrams, device=flair.device).unsqueeze(dim=1)
+                n_gram_char_indices = tokenize_batch(self.dictionary, chars, self.ngrams, otf=True, device=flair.device).unsqueeze(dim=1)
+
                 sequences_as_char_indices.append(n_gram_char_indices)
                 
            

@@ -98,7 +98,7 @@ with open(args.outf, "w") as outf:
             generated_output = generated_output + word
 
             # Use last 200 chars as sequence for new input
-            input = data.tokenize(model.dictionary, [generated_output[-200:]], "Tokenize generated output", model.ngrams, otf=True, device=device).unsqueeze(
+            input = data.tokenize(model.dictionary, [generated_output[-200:]], model.ngrams, label="Tokenize generated output", otf=True, device=device).unsqueeze(
                 dim=2
             )
 

@@ -1,4 +1,3 @@
-
 from flair.data import Sentence
 import wrapt
 
@@ -35,18 +34,14 @@ def load_language_model(wrapped, instance, args, kwargs):
     
 
 from flair.datasets import NER_ENGLISH_PERSON
-from flair.embeddings import WordEmbeddings, FlairEmbeddings, StackedEmbeddings
+from flair.embeddings import FlairEmbeddings, StackedEmbeddings
 from flair.models import SequenceTagger
 from flair.trainers import ModelTrainer
 
-# fe = FlairEmbeddings('flair_model.pt')
-#
-# s = Sentence("hello")
-# fe.embed(s)
-# exit()
-
 # 1. get the corpus
 corpus = NER_ENGLISH_PERSON()
+
+# TODO: Downsample
 print(corpus)
 
 # 2. what label do we want to predict?
