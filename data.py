@@ -4,7 +4,7 @@ import sys
 from collections import Counter, defaultdict
 from operator import itemgetter
 from pathlib import Path
-from typing import List
+from typing import List, Tuple
 
 import torch
 from nltk import ngrams
@@ -96,22 +96,26 @@ class Corpus:
 
         self.dictionary = Dictionary()
 
-        _path = Path(path)
+        self.load_dataset(path)
 
-        # Use local datasets
-        if _path.is_dir():
+
+    def load_dataset(self, path: str):
+
+        if Path(path).is_dir():
             self.train = self.tokenize_file(os.path.join(path, "train.txt"))
             self.valid = self.tokenize_file(os.path.join(path, "valid.txt"))
             self.test = self.tokenize_file(os.path.join(path, "test.txt"))
-        elif "data/enwik8" in path:
+        elif "data/enwik8" in str(path):
             prep_enwiki8()
             self.train = self.tokenize_file(os.path.join(path, "train.txt"))
             self.valid = self.tokenize_file(os.path.join(path, "valid.txt"))
             self.test = self.tokenize_file(os.path.join(path, "test.txt"))
-        # Try loading from huggingface
+
         else:
-            self.load_from_huggingface(path)
-    
+            self.load_from_huggingface(str(path))
+
+
+
     def load_from_huggingface(self, path):
             from datasets import load_dataset
 
@@ -325,6 +329,17 @@ def grouped(iterable, n):
     # s -> (s0,s1,s2,...sn-1), (sn,sn+1,sn+2,...s2n-1), (s2n,s2n+1,s2n+2,...s3n-1), ...
     return zip(*[iter(iterable)] * n)
 
+def prep_obw():
+    import zipfile
+    import requests
+
+    r = requests.get("https://data.deepai.org/enwik8.zip", stream=True)
+    
+    with open("enwik8.zip", 'wb') as fd:
+        for chunk in r.iter_content(chunk_size=128):
+            fd.write(chunk)
+
+    data = zipfile.ZipFile('enwik8.zip').read('enwik8')
 
 def prep_enwiki8():
     # From: https://github.com/salesforce/awd-lstm-lm/blob/master/data/enwik8/prep_enwik8.py
