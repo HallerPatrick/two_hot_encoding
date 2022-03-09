@@ -16,6 +16,8 @@ class Dictionary:
         self.word2idx = {}
         self.idx2word = []
         self._marker_tokens = []
+        self.ngram_indexes = defaultdict(list)
+
 
     def add_word(self, word):
         if word.startswith("<") and word.endswith(">"):
@@ -114,8 +116,6 @@ class Corpus:
         else:
             self.load_from_huggingface(str(path))
 
-
-
     def load_from_huggingface(self, path):
             from datasets import load_dataset
 
@@ -178,8 +178,8 @@ class Corpus:
 
                 unk_idx = self.dictionary.add_word(n_unk_token)
 
-                if unk_idx not in self.ngram_indexes[i]:
-                    self.ngram_indexes[i].append(unk_idx)
+                if unk_idx not in self.dictionary.ngram_indexes[i]:
+                    self.dictionary.ngram_indexes[i].append(unk_idx)
 
                 for ngram in ngrams(chars, i):
                     token_frequency["".join(ngram)] += 1
@@ -191,8 +191,8 @@ class Corpus:
             if freq > self.unk_threshold or freq == -1:
                 sanit_token = self.remove_marker_tokens(toke)
                 idx = self.dictionary.add_word(toke)
-                if idx not in self.ngram_indexes[len(sanit_token)]:
-                    self.ngram_indexes[len(sanit_token)].append(idx)
+                if idx not in self.dictionary.ngram_indexes[len(sanit_token)]:
+                    self.dictionary.ngram_indexes[len(sanit_token)].append(idx)
 
     def tokenize_file(self, path):
         # Add words to the dictionary

@@ -45,20 +45,6 @@ def run_train(args):
     # Build the model
     ###############################################################################
 
-    ntokens = len(corpus.dictionary)
-
-    # model = _model.RNNModel(
-    #     args.model,
-    #     ntokens,
-    #     args.emsize,
-    #     args.nhid,
-    #     args.nlayers,
-    #     args.ngrams,
-    #     args.unk_t,
-    #     args.dropout,
-    #     args.tied,
-    # ).to(device)
-
     model = _model.RNNModel(
         corpus.dictionary,
         args.nlayers,
@@ -116,8 +102,6 @@ def run_train(args):
                     total_loss += len(data[0]) * criterion(output, targets).item()
                 else:
                     total_loss += len(data[0]) * criterion(output, targets).item()
-                    # print(total_loss)
-                    # exit()
 
         return total_loss / (len(data_source[0]) - 1)
 
@@ -219,7 +203,7 @@ def run_train(args):
 
     # Load the best saved model.
     with open(args.save, "rb") as f:
-        model = torch.load(f)
+        model = torch.load(f).to(device)
         # after load the rnn params are not a continuous chunk of memory
         # this makes them a continuous chunk, and will speed up forward pass
         # Currently, only rnn model supports flatten_parameters function.

@@ -30,6 +30,9 @@ This is a WIP and will not accept PRs for now.
 | N-Gram CL LSTM       | 200 | 1000 | 150 | 128 | 69 | 3 | ptb | 0.002 | 1.56 (only unigrams) | 0.64 (only unigrams) 
 | Paper LSTM [^1] [^2] | 400 | 1000 | 150 | 128 | 500 | 3 | ptb | 0.001 (1/10 decay) | 1 | 1.232
 
+| N-Gram CL LSTM | 256 | 1024 | 250 | 100 | 500 | 2 | obw | 0.001 (1/10 decay) | 1 | |
+| N-Gram CL LSTM | 256 | 1024 | 250 | 100 | 500 | 2 | obw | 0.001 (1/10 decay) | 2 | |
+
 
 
 ### Model and Corpus train/size metrics
@@ -75,4 +78,5 @@ lr: 20
 * [ ] Make CPP extension work
 * [ ] Build flair language model
 * [ ] Compare epoch time between bigram and uni gram model
+
 

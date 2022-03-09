@@ -8,7 +8,7 @@ def split_data(path, target_path):
     with open(path) as f:
         lines = f.readlines()
 
-    total_lines = len(lines)
+    total_lines = len(lines) * 0.1
     
     train_slice = total_lines * train_split
     test_slice = train_slice + (test_split * total_lines)
@@ -18,20 +18,20 @@ def split_data(path, target_path):
     test_lines = lines[train_slice:test_slice]
     valid_lines = lines[test_slice:valid_slice]
 
-    with open(target_path + "train.txt", "w") as f:
+    with open(target_path + "/train.txt", "w") as f:
         f.write("\n".join(train_lines))
 
-    with open(target_path + "test.txt", "w") as f:
+    with open(target_path + "/test.txt", "w") as f:
         f.write("\n".join(test_lines))
 
-    with open(target_path + "valid.txt", "w") as f:
+    with open(target_path + "/valid.txt", "w") as f:
         f.write("\n".join(valid_lines))
 
 
 if __name__ == "__main__":
     import sys
 
-    assert len(sys.argv) == 2
+    assert len(sys.argv) == 3
 
-    split_data(sys.argv[1], "sub_obw")
+    split_data(sys.argv[1], sys.argv[2])
 

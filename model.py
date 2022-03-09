@@ -29,6 +29,7 @@ class RNNModel(nn.Module):
         super(RNNModel, self).__init__()
 
         self.ntoken = len(dictionary)
+
         self.encoder = NGramsEmbedding(len(dictionary), embedding_size)
         self.ngrams = ngrams
         self.unk_t = unk_t
@@ -77,14 +78,6 @@ class RNNModel(nn.Module):
         decoded = self.decoder(output)
         decoded = decoded.view(-1, self.ntoken)
 
-        # print("NATIVE: ")
-        print(input.size())
-        # for a in input[0]:
-        #     print(repr(self.dictionary.idx2word[a.item()]), end="")
-        # print()
-        # print(output.size())
-        # print(hidden[0].size())
-        # print(hidden[1].size())
         return decoded, hidden
 
     def forward2(self, input, hidden, ordered_sequence_lengths=None):
@@ -102,15 +95,6 @@ class RNNModel(nn.Module):
         decoded = self.decoder(
             output.view(output.size(0) * output.size(1), output.size(2))
         )
-
-        print("FLAIR: ")
-        print(input.size())
-        for a in input[0]:
-            print(repr(self.dictionary.idx2word[a.item()]), end="")
-        print()
-        # print(output.size())
-        # print(hidden[0].size())
-        # print(hidden[1].size())
 
         return (
             decoded.view(output.size(0), output.size(1), decoded.size(1)),
@@ -253,6 +237,7 @@ class RNNModel(nn.Module):
             batch = batch.transpose(1, 2)
 
             _, rnn_output, hidden = self.forward2(batch, hidden)
+
             output_parts.append(rnn_output)
 
         # concatenate all chunks to make final output

@@ -33,13 +33,13 @@ def load_language_model(wrapped, instance, args, kwargs):
     return model
     
 
-from flair.datasets import NER_ENGLISH_PERSON
+from flair.datasets import CONLL_03
 from flair.embeddings import FlairEmbeddings, StackedEmbeddings
 from flair.models import SequenceTagger
 from flair.trainers import ModelTrainer
 
 # 1. get the corpus
-corpus = NER_ENGLISH_PERSON()
+corpus = CONLL_03("data")
 
 # TODO: Downsample
 print(corpus)
@@ -74,3 +74,6 @@ trainer.train('resources/taggers/sota-ner-flair',
               learning_rate=0.1,
               mini_batch_size=32,
               max_epochs=150)
+
+
+
