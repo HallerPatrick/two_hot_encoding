@@ -204,12 +204,11 @@ class Corpus:
 
         return tokenize(self.dictionary, lines, self.ngrams, path, False, self.device)
 
+
 def tokenize_batch(dictionary, lines: List[str], ngram, label=None, otf=False, device="cpu"):
     """Tokenizes lines of text. Number of lines is already number of batches.
-
     Parameters
     ----------
-
     lines: List[str]
         List of strings, every string can represent a sentence or line of text.
     otf: bool
@@ -328,18 +327,6 @@ def tokenize(dictionary, lines: List[str], ngram, label, otf=False, device="cpu"
 def grouped(iterable, n):
     # s -> (s0,s1,s2,...sn-1), (sn,sn+1,sn+2,...s2n-1), (s2n,s2n+1,s2n+2,...s3n-1), ...
     return zip(*[iter(iterable)] * n)
-
-def prep_obw():
-    import zipfile
-    import requests
-
-    r = requests.get("https://data.deepai.org/enwik8.zip", stream=True)
-    
-    with open("enwik8.zip", 'wb') as fd:
-        for chunk in r.iter_content(chunk_size=128):
-            fd.write(chunk)
-
-    data = zipfile.ZipFile('enwik8.zip').read('enwik8')
 
 def prep_enwiki8():
     # From: https://github.com/salesforce/awd-lstm-lm/blob/master/data/enwik8/prep_enwik8.py

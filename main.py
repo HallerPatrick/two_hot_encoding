@@ -44,17 +44,19 @@ def run_train(args):
     ###############################################################################
     # Build the model
     ###############################################################################
-
-    model = _model.RNNModel(
-        corpus.dictionary,
-        args.nlayers,
-        args.ngrams,
-        args.nhid,
-        args.unk_t,
-        None,
-        args.emsize,
-        dropout=args.dropout,
-    )
+    if args.model == 'Transformer':
+        model = _model.TransformerModel(corpus.dictionary, args.emsize, args.nhead, args.nhid, args.nlayers, args.dropout).to(device)
+    else:
+        model = _model.RNNModel(
+            corpus.dictionary,
+            args.nlayers,
+            args.ngrams,
+            args.nhid,
+            args.unk_t,
+            None,
+            args.emsize,
+            dropout=args.dropout,
+        )
 
     count_parameters(model)
    
@@ -79,16 +81,24 @@ def run_train(args):
         model.eval()
         total_loss = 0.0
         ntokens = len(corpus.dictionary)
-
-        hidden = model.init_hidden(eval_batch_size)
+        
+        if args.model != "Transformer":
+            hidden = model.init_hidden(eval_batch_size)
 
         with torch.no_grad():
             for i in range(0, data_source.size(1) - args.ngrams, args.bptt):
                 data, targets = get_batch(data_source, i, args.bptt)
                 targets = soft_n_hot(targets, ntokens)
-                
-                output, hidden = model(data, hidden)
-                hidden = repackage_hidden(hidden)
+
+                if args.model == 'Transformer':
+                    output = model(data)
+                    output = output.view(-1, ntokens)
+
+                else:
+                    output, hidden = model(data, hidden)
+                    hidden = repackage_hidden(hidden)
+
+                print(output.size())
 
                 # Perplexity only based on unigram candidates
                 if args.unigram_ppl:

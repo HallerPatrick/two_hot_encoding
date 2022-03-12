@@ -85,7 +85,6 @@ class Decoder(nn.Module):
         
         return prediction, hidden, cell
 
-
 class Seq2Seq(nn.Module):
     def __init__(self, encoder, decoder, device):
         super().__init__()
