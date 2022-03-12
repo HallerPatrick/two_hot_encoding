@@ -58,6 +58,8 @@ def run_train(args):
             dropout=args.dropout,
         )
 
+    model = torch.nn.DataParallel(model)
+
     count_parameters(model)
    
     # TODO: Weighted loss labels?
@@ -83,7 +85,7 @@ def run_train(args):
         ntokens = len(corpus.dictionary)
         
         if args.model != "Transformer":
-            hidden = model.init_hidden(eval_batch_size)
+            hidden = model.module.init_hidden(eval_batch_size)
 
         with torch.no_grad():
             for i in range(0, data_source.size(1) - args.ngrams, args.bptt):
@@ -122,7 +124,7 @@ def run_train(args):
         start_time = time.time()
         ntokens = len(corpus.dictionary)
         if args.model != "Transformer":
-            hidden = model.init_hidden(args.batch_size)
+            hidden = model.module.init_hidden(args.batch_size)
         for batch, i in enumerate(
             range(0, train_data.size(1) - args.ngrams, args.bptt)
         ):
@@ -199,9 +201,9 @@ def run_train(args):
             # Save the model if the validation loss is the best we've seen so far.
             if not best_val_loss or val_loss < best_val_loss:
                 with open(args.save, "wb") as f:
-                    torch.save(model, f)
+                    torch.save(model.module, f)
 
-                model.save("flair_" + args.save)
+                model.module.save("flair_" + args.save)
 
                 best_val_loss = val_loss
             else:
@@ -214,11 +216,14 @@ def run_train(args):
     # Load the best saved model.
     with open(args.save, "rb") as f:
         model = torch.load(f).to(device)
+
         # after load the rnn params are not a continuous chunk of memory
         # this makes them a continuous chunk, and will speed up forward pass
         # Currently, only rnn model supports flatten_parameters function.
         if args.model in ["RNN_TANH", "RNN_RELU", "LSTM", "GRU"]:
             model.rnn.flatten_parameters()
+
+        model = torch.nn.DataParallel(model)
 
     test_loss = evaluate(test_data)
 
