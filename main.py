@@ -56,9 +56,9 @@ def run_train(args):
             None,
             args.emsize,
             dropout=args.dropout,
-        )
+        ).to(device)
 
-    model = torch.nn.DataParallel(model)
+    model = torch.nn.DataParallel(model, dim=1).to(device)
 
     count_parameters(model)
    
@@ -91,7 +91,7 @@ def run_train(args):
             for i in range(0, data_source.size(1) - args.ngrams, args.bptt):
                 data, targets = get_batch(data_source, i, args.bptt)
                 targets = soft_n_hot(targets, ntokens)
-
+                
                 if args.model == 'Transformer':
                     output = model(data)
                     output = output.view(-1, ntokens)
@@ -100,7 +100,6 @@ def run_train(args):
                     output, hidden = model(data, hidden)
                     hidden = repackage_hidden(hidden)
 
-                print(output.size())
 
                 # Perplexity only based on unigram candidates
                 if args.unigram_ppl:
@@ -125,10 +124,13 @@ def run_train(args):
         ntokens = len(corpus.dictionary)
         if args.model != "Transformer":
             hidden = model.module.init_hidden(args.batch_size)
+
+
         for batch, i in enumerate(
             range(0, train_data.size(1) - args.ngrams, args.bptt)
         ):
             data, targets = get_batch(train_data, i, args.bptt)
+
 
             # Starting each batch, we detach the hidden state from how it was previously produced.
             # If we didn't, the model would try backpropagating all the way to start of the dataset.
@@ -138,7 +140,7 @@ def run_train(args):
                 output = output.view(-1, ntokens)
             else:
                 hidden = repackage_hidden(hidden)
-
+                data = data.transpose(1, 2).contiguous()
                 output, hidden = model(data, hidden)
 
             targets = soft_n_hot(targets, ntokens)

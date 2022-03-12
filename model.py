@@ -73,8 +73,15 @@ class RNNModel(nn.Module):
         nn.init.uniform_(self.decoder.weight, -initrange, initrange)
 
     def forward(self, input, hidden):
-        # [#ngram, #seq_len, #batch_size]
+        print("forward")
+        print(f"Input: {input.size()}")
+        # [#(gram, #seq_len, #batch_size]
         emb = self.encoder(input)
+
+        emb = emb.transpose(0, 1).contiguous()
+        self.rnn.flatten_parameters()
+
+        print(f"Encodede: {emb.size()}")
         output, hidden = self.rnn(emb, hidden)
         decoded = self.decoder(output)
         decoded = decoded.view(-1, self.ntoken)
@@ -108,6 +115,13 @@ class RNNModel(nn.Module):
         return (
             weight.new(self.nlayers, bsz, self.hidden_size).zero_().clone().detach(),
             weight.new(self.nlayers, bsz, self.hidden_size).zero_().clone().detach(),
+        )
+
+    def _init_hidden(self, bsz):
+        weight = next(self.parameters()).detach()
+        return (
+            weight.new(bsz, self.nlayers, self.hidden_size).zero_().clone().detach(),
+            weight.new(bsz, self.nlayers, self.hidden_size).zero_().clone().detach(),
         )
 
     def __getstate__(self):
