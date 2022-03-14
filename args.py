@@ -67,6 +67,12 @@ def argparser_train():
     parser.add_argument(
         "--unk-t", type=int, default=3, help="UNK threshold for bigrams"
     )
+    parser.add_argument(
+        "--max-dict-size",
+        type=int,
+        default=0,
+        help="Set max dictionary size, other tokens become UNK",
+    )
     parser.add_argument("--ngrams", type=int, default=2, help="N-Grams used")
     parser.add_argument(
         "--unigram-ppl",
