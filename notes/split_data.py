@@ -21,9 +21,9 @@ def split_data(path, target_path):
 
     total_lines = len(lines) * 0.1
 
-    train_slice = total_lines * train_split
-    test_slice = train_slice + (test_split * total_lines)
-    valid_slice = test_slice + (valid_split * total_lines)
+    train_slice = round(total_lines * train_split)
+    test_slice = train_slice + round(test_split * total_lines)
+    valid_slice = test_slice + round(valid_split * total_lines)
 
     train_lines = lines[:train_slice]
     test_lines = lines[train_slice:test_slice]
