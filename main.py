@@ -221,8 +221,10 @@ def run_train(args):
             if not best_val_loss or val_loss < best_val_loss:
                 with open(args.save, "wb") as f:
                     torch.save(model, f)
-
-                model.save("flair_" + args.save)
+                
+                p = args.save.split("/")
+                p[-1] = "flair_" + p[-1]
+                model.save("/".join(p))
 
                 best_val_loss = val_loss
             else:
