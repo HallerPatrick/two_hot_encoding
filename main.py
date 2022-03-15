@@ -57,6 +57,8 @@ def run_train(args):
             args.nhead,
             args.nhid,
             args.nlayers,
+            args.ngrams,
+            args.unk_t,
             args.dropout,
         ).to(device)
     else:
@@ -69,7 +71,7 @@ def run_train(args):
             None,
             args.emsize,
             dropout=args.dropout,
-        )
+        ).to(device)
 
     count_parameters(model)
 
