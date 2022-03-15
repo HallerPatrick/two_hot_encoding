@@ -1,5 +1,24 @@
 import argparse
+from argparse import Namespace
 
+from prettytable.prettytable import PrettyTable
+
+import yaml
+
+def read_config(path):
+    """Return namespace object like argparser of yaml file"""
+
+    with open(path, "r") as f:
+        conf = yaml.safe_load(f)
+    
+    table = PrettyTable([ "Parameter", "Value" ])
+    
+    for parameter, value in conf.items():
+        table.add_row([parameter, value])
+    
+    print("Configrurations:")
+    print(table)
+    return Namespace(**conf)
 
 def argparser_generate():
 
@@ -39,11 +58,6 @@ def argparser_generate():
     parser.add_argument(
         "--log-interval", type=int, default=100, help="reporting interval"
     )
-    parser.add_argument(
-        "--only-unigrams",
-        action="store_true",
-        help="use character based language model",
-    )
     return parser.parse_args()
 
 
@@ -52,6 +66,7 @@ def argparser_train():
     parser = argparse.ArgumentParser(
         description="PyTorch Wikitext-2 RNN/LSTM/GRU/Transformer Language Model"
     )
+    parser.add_argument("--config", type=str, default="", help="Configration file (YAML) for all arguments, if empty, use command lines arguments")
     parser.add_argument(
         "--data",
         type=str,

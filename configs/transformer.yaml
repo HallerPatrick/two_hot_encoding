@@ -1,0 +1,36 @@
+# Hyperparameter configs
+
+cuda: false
+
+model: Transformer
+data: data/wikitext-2
+save: trans-wiki-2.pt
+
+ngrams: 2
+
+unk_t: 30
+max_dict_size: 0
+
+epochs: 100
+
+emsize: 128
+nhid: 512
+batch_size: 100
+bptt: 150
+
+nlayers: 2
+nhead: 2
+dropout: 0.2
+
+wdecay: 1.2e-6
+
+lr: 0.1
+optimizer: sgd
+
+clip: 0.25
+
+unigram_ppl: false
+seed: 1111
+log_interval: 200
+
+dry_run: false

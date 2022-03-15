@@ -4,3 +4,4 @@ datasets
 prettytable
 flair
 colorama
+pyyaml

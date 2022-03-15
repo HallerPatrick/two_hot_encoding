@@ -8,7 +8,7 @@ import torch
 from multihot import data
 import multihot.model as _model
 
-from multihot.args import argparser_train
+from multihot.args import argparser_train, read_config
 from multihot.loss import CrossEntropyLossSoft
 from multihot.torch_utils import (
     batchify,
@@ -39,8 +39,6 @@ def run_train(args):
     ###############################################################################
 
     corpus = data.Corpus(args.data, device, args.ngrams, args.unk_t, args.max_dict_size)
-
-    print(f"Dictionary Size: {len(corpus.dictionary)}")
 
     eval_batch_size = 10
     train_data = batchify(corpus.train, args.batch_size, device)
@@ -263,4 +261,8 @@ def run_train(args):
 
 if __name__ == "__main__":
     args = argparser_train()
+
+    if args.config != "":
+        args = read_config(args.config) 
+
     run_train(args)
