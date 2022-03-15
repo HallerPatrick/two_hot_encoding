@@ -7,8 +7,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from data import tokenize, tokenize_batch
-from two_hot_encoding import NGramsEmbedding
+from .data import tokenize, tokenize_batch
+from .two_hot_encoding import NGramsEmbedding
 
 
 class RNNModel(nn.Module):

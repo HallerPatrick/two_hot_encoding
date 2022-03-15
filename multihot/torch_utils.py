@@ -59,6 +59,7 @@ def batchify(data, bsz, device):
     data = torch.transpose(data, 1, 2).contiguous()
     return data.to(device)
 
+
 def repackage_hidden(h):
     """Wraps hidden states in new Tensors, to detach them from their history."""
 
@@ -83,21 +84,23 @@ def display_input_n_gram_sequences(input, corpus):
         print(f"{i}-gram")
         corpus.display_text(input[i][:, :1])
 
+
 def display_target_n_gram_sequences(input, corpus, batch_size):
     print("Target sequences:")
     for i in input.size()[0]:
         print(f"{i}-gram")
         corpus.display_text(input[i][::batch_size])
 
+
 def count_parameters(model):
     table = PrettyTable(["Modules", "Parameters"])
     total_params = 0
     for name, parameter in model.named_parameters():
-        if not parameter.requires_grad: continue
+        if not parameter.requires_grad:
+            continue
         params = parameter.numel()
         table.add_row([name, params])
-        total_params+=params
+        total_params += params
     print(table)
     print(f"Total Trainable Params: {total_params}")
     return total_params
-    

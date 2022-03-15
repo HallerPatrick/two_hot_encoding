@@ -18,9 +18,7 @@ class CrossEntropyLossSoft(nn.Module):
         if self.ignore_index:
             target[:, self.ignore_index] = 0
 
-        logprobs = nn.functional.log_softmax(
-            input.view(input.shape[0], -1), dim=1
-        )
+        logprobs = nn.functional.log_softmax(input.view(input.shape[0], -1), dim=1)
 
         # Calculate logprobs for each class with weights
         if self.weight is not None:

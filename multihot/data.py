@@ -197,6 +197,8 @@ class Corpus:
                     if idx not in self.dictionary.ngram_indexes[len(sanit_token)]:
                         self.dictionary.ngram_indexes[len(sanit_token)].append(idx)
 
+        print(f"Dictionary Size: {len(self.dictionary)}")
+
     def get_frequency(self, lines: List[str], train_split_label):
         token_frequency = Counter()
 

@@ -5,19 +5,19 @@ from typing import Optional
 
 import torch
 
-import data
-import model as _model
+from multihot import data
+import multihot.model as _model
 
-from args import argparser_train
-from loss import CrossEntropyLossSoft
-from torch_utils import (
+from multihot.args import argparser_train
+from multihot.loss import CrossEntropyLossSoft
+from multihot.torch_utils import (
     batchify,
     count_parameters,
     export_onnx,
     get_batch,
     repackage_hidden,
 )
-from two_hot_encoding import soft_n_hot
+from multihot.two_hot_encoding import soft_n_hot
 
 
 device: Optional[str] = None
