@@ -1,10 +1,13 @@
+import sys
+
 from flair.data import Sentence
 import wrapt
 
 import flair
 import torch
 
-from model import RNNModel
+from multihot.model import RNNModel, TransformerModel
+
 
 _old_load_language_model = flair.models.LanguageModel.load_language_model
 
@@ -15,18 +18,33 @@ def load_language_model(wrapped, instance, args, kwargs):
 
     state = torch.load(str(args[0]), map_location=flair.device)
 
-    model = RNNModel(
-        dictionary=state["dictionary"],
-        nlayers=state["nlayers"],
-        ngrams=state["ngrams"],
-        hidden_size=state["hidden_size"],
-        unk_t=state["unk_t"],
-        nout=state["nout"],
-        embedding_size=state["embedding_size"],
-        is_forward_lm=state["is_forward_lm"],
-        document_delimiter=state["document_delimiter"],
-        dropout=state["dropout"],
-    )
+    if sys.argv[1] == "rnn":
+        model = RNNModel(
+            dictionary=state["dictionary"],
+            nlayers=state["nlayers"],
+            ngrams=state["ngrams"],
+            hidden_size=state["hidden_size"],
+            unk_t=state["unk_t"],
+            nout=state["nout"],
+            embedding_size=state["embedding_size"],
+            is_forward_lm=state["is_forward_lm"],
+            document_delimiter=state["document_delimiter"],
+            dropout=state["dropout"],
+        )
+    else:
+        model = TransformerModel(
+            dictionary=state["dictionary"],
+            nlayers=state["nlayers"],
+            nhead=state["nhead"],
+            ngrams=state["ngrams"],
+            nhid=state["hidden_size"],
+            unk_t=state["unk_t"],
+            embedding_size=state["embedding_size"],
+            is_forward_lm=state["is_forward_lm"],
+            document_delimiter=state["document_delimiter"],
+            dropout=state["dropout"],
+        )
+
     model.load_state_dict(state["state_dict"])
     model.eval()
     model.to(flair.device)
@@ -55,7 +73,7 @@ print(label_dict)
 # 4. initialize embedding stack with Flair and GloVe
 embedding_types = [
     # FlairEmbeddings('news-forward'),
-    FlairEmbeddings("flair_model.pt"),
+    FlairEmbeddings("flair_trans-wiki-2.pt"),
 ]
 
 embeddings = StackedEmbeddings(embeddings=embedding_types)

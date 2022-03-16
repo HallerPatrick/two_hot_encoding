@@ -324,6 +324,7 @@ class TransformerModel(nn.Module):
         self.unk_t = unk_t
         self.nlayers = nlayers
         self.document_delimiter = document_delimiter
+        self.dropout = dropout
 
         self.hidden_size = nhid
         self.nhead = nhead
@@ -380,9 +381,8 @@ class TransformerModel(nn.Module):
             "hidden_size": self.hidden_size,
             "nlayers": self.nlayers,
             "embedding_size": self.embedding_size,
-            # "nout": self.nout,
             "document_delimiter": self.document_delimiter,
-            # "dropout": self.dropout,
+            "dropout": self.dropout,
             "ngrams": self.ngrams,
             "unk_t": self.unk_t,
             "nhead": self.nhead
@@ -406,7 +406,7 @@ class TransformerModel(nn.Module):
                 embedding_size=d["embedding_size"],
                 is_forward_lm=d["is_forward_lm"],
                 document_delimiter=d["document_delimiter"],
-                # dropout=d["dropout"],
+                dropout=d["dropout"],
                 nhead=d["nhead"]
             )
 
@@ -434,7 +434,7 @@ class TransformerModel(nn.Module):
             "embedding_size": self.embedding_size,
             # "nout": self.nout,
             "document_delimiter": self.document_delimiter,
-            # "dropout": self.dropout,
+            "dropout": self.dropout,
             "ngrams": self.ngrams,
             "unk_t": self.unk_t,
             "nhead": self.nhead
@@ -448,16 +448,16 @@ class TransformerModel(nn.Module):
         encoded = self.pos_encoder(encoded)
 
         output = self.transformer_encoder(encoded, self.src_mask)
-        output = self.decoder(output)
+        decoded = self.decoder(output)
 
         # if self.proj is not None:
         #     output = self.proj(output)
 
-        decoded = self.decoder(
-            output.view(output.size(0) * output.size(1), output.size(2))
-        )
+        # decoded = self.decoder(
+        #     output.view(output.size(0) * output.size(1), output.size(2))
+        # )
 
-        return (decoded.view(output.size(0), output.size(1), decoded.size(1)), output)
+        return decoded, output
 
     def get_representation(
         self,

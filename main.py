@@ -115,8 +115,6 @@ def run_train(args):
                     output, hidden = model(data, hidden)
                     hidden = repackage_hidden(hidden)
 
-                print(output.size())
-
                 # Perplexity only based on unigram candidates
                 if args.unigram_ppl:
                     output = torch.index_select(
