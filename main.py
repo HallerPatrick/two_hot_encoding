@@ -38,7 +38,7 @@ def run_train(args):
     # Load data
     ###############################################################################
 
-    corpus = data.Corpus(args.data, device, args.ngrams, args.unk_t, args.max_dict_size)
+    corpus = data.Corpus(args.data, args.ngrams, args.unk_t, args.max_dict_size)
 
     eval_batch_size = 10
     train_data = batchify(corpus.train, args.batch_size, device)
@@ -74,6 +74,7 @@ def run_train(args):
     count_parameters(model)
 
     # TODO: Weighted loss labels?
+    # TODO: Weighted loss based on token count: n-gram specific unk ratio
     weights = None  # torch.ones((ntokens))
     # for n, n_idxs in corpus.ngram_indexes.items():
     #     for idxs in n_idxs:
@@ -104,7 +105,7 @@ def run_train(args):
 
         with torch.no_grad():
             for i in range(0, data_source.size(1) - args.ngrams, args.bptt):
-                data, targets = get_batch(data_source, i, args.bptt)
+                data, targets = get_batch(data_source, i, args.bptt, device)
                 targets = soft_n_hot(targets, ntokens)
 
                 if args.model == "Transformer":
@@ -145,7 +146,7 @@ def run_train(args):
         for batch, i in enumerate(
             range(0, train_data.size(1) - args.ngrams, args.bptt)
         ):
-            data, targets = get_batch(train_data, i, args.bptt)
+            data, targets = get_batch(train_data, i, args.bptt, device)
 
             # Starting each batch, we detach the hidden state from how it was previously produced.
             # If we didn't, the model would try backpropagating all the way to start of the dataset.

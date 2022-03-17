@@ -7,7 +7,7 @@ import torch
 from prettytable import PrettyTable
 
 
-def get_batch(source, i, bptt):
+def get_batch(source, i, bptt, device):
     """
     get_batch subdivides the source data into chunks of length args.bptt.
     If source is equal to the example output of the batchify function, with
@@ -23,14 +23,14 @@ def get_batch(source, i, bptt):
     seq_len = min(bptt, source.size(1) - ngrams - i)
 
     # [ngram, sequnces, bsz]
-    data = source[:, i : i + seq_len]
+    data = source[:, i : i + seq_len].to(device)
 
     targets = []
     for ngram in range(1, ngrams + 1):
         target = source[ngram - 1, i + ngram : i + ngram + seq_len]
         targets.append(target.view(-1).unsqueeze(dim=0))
 
-    targets = torch.cat(targets)
+    targets = torch.cat(targets).to(device)
 
     return data, targets
 

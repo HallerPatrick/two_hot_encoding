@@ -93,11 +93,10 @@ class Corpus:
     test: Optional[Tensor]
     train: Optional[Tensor]
 
-    def __init__(self, path, device, ngrams, unk_threshold, max_dict_size) -> None:
+    def __init__(self, path, ngrams, unk_threshold, max_dict_size) -> None:
         self.unk_threshold = unk_threshold
         self.ngrams = ngrams
         self.max_dict_size = max_dict_size
-        self.device = device
 
         # Keep track of all indexes for each ngram, this is used
         # for the generating task
@@ -173,7 +172,7 @@ class Corpus:
         # Tokenizing
         for train_split, lines in train_files.items():
             tokenized_text = tokenize(
-                self.dictionary, lines, self.ngrams, train_split, False, self.device
+                self.dictionary, lines, self.ngrams, train_split, False
             )
 
             setattr(self, train_split, tokenized_text)
@@ -242,7 +241,7 @@ class Corpus:
 
 
 def tokenize_batch(
-    dictionary, lines: List[str], ngram, label=None, otf=False, device="cpu"
+    dictionary, lines: List[str], ngram, label=None, otf=False
 ):
     """Tokenizes lines of text. Number of lines is already number of batches.
     Parameters
@@ -303,14 +302,11 @@ def tokenize_batch(
 
         padded_char_sequence.append(seq)
 
-    n_gram_sequences = torch.cat([torch.tensor(t) for t in padded_char_sequence]).to(
-        device
-    )
-
+    n_gram_sequences = torch.cat([torch.tensor(t) for t in padded_char_sequence])
     return n_gram_sequences
 
 
-def tokenize(dictionary, lines: List[str], ngram, label, otf=False, device="cpu"):
+def tokenize(dictionary, lines: List[str], ngram, label, otf=False):
     """Tokenizes lines of text.
 
     Parameters
@@ -366,7 +362,7 @@ def tokenize(dictionary, lines: List[str], ngram, label, otf=False, device="cpu"
 
         n_gram_sequences.append(seq)
 
-    n_gram_sequences = torch.cat([t[:min_length] for t in n_gram_sequences]).to(device)
+    n_gram_sequences = torch.cat([t[:min_length] for t in n_gram_sequences])
 
     return n_gram_sequences
 
