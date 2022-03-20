@@ -5,6 +5,8 @@ from typing import Optional
 
 import torch
 
+import wandb
+
 from multihot import data
 import multihot.model as _model
 
@@ -19,11 +21,15 @@ from multihot.torch_utils import (
 )
 from multihot.two_hot_encoding import soft_n_hot
 
+wandb.init(project="n-hot-encoding", entity="hallerpatrick")
 
 device: Optional[str] = None
 
 
 def run_train(args):
+
+    wandb.config.update(args)
+
     # Set the random seed manually for reproducibility.
     torch.manual_seed(args.seed)
     if torch.cuda.is_available():
@@ -70,7 +76,8 @@ def run_train(args):
             args.emsize,
             dropout=args.dropout,
         ).to(device)
-
+    
+    wandb.log({"dict_size": len(corpus.dictionary)})
     count_parameters(model)
 
     # TODO: Weighted loss labels?
@@ -194,6 +201,8 @@ def run_train(args):
             if args.dry_run:
                 break
 
+            wandb.watch(model)
+
     # Loop over epochs.
     best_val_loss = None
 
@@ -203,7 +212,7 @@ def run_train(args):
             epoch_start_time = time.time()
             train()
             val_loss = evaluate(val_data)
-
+            
             print("-" * 96)
             print(
                 "| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | "
@@ -215,6 +224,8 @@ def run_train(args):
                     val_loss / math.log(2),
                 )
             )
+
+            wandb.log({"loss": val_loss, "ppl": math.exp(val_loss), "bpc": val_loss / math.log(2)})
             print("-" * 96)
             # Save the model if the validation loss is the best we've seen so far.
             if not best_val_loss or val_loss < best_val_loss:

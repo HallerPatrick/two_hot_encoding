@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 
 from collections import Counter, defaultdict
 from operator import itemgetter
@@ -178,6 +179,9 @@ class Corpus:
             setattr(self, train_split, tokenized_text)
 
     def setup_dictionary(self, token_frequencies: Counter):
+
+        with open("freqs.json", "w") as f:
+            json.dump(dict(token_frequencies), f)
 
         self.dictionary.add_word("<start>")
         self.dictionary.add_word("<eos>")

@@ -48,6 +48,7 @@ class RNNModel(nn.Module):
         else:
             self.rnn = nn.LSTM(embedding_size, hidden_size, nlayers, dropout=dropout)
 
+        self.drop = nn.Dropout(dropout)
         self.decoder = nn.Linear(hidden_size, len(dictionary))
         if nout is not None:
             self.proj = nn.Linear(hidden_size, nout)
@@ -74,6 +75,7 @@ class RNNModel(nn.Module):
     def forward(self, input, hidden):
         # [#ngram, #seq_len, #batch_size]
         emb = self.encoder(input)
+        emb = self.drop(emb)
         output, hidden = self.rnn(emb, hidden)
         decoded = self.decoder(output)
         decoded = decoded.view(-1, self.ntoken)
@@ -83,6 +85,7 @@ class RNNModel(nn.Module):
     def forward2(self, input, hidden, ordered_sequence_lengths=None):
 
         encoded = self.encoder(input)
+        encoded = self.drop(encoded)
 
         self.rnn.flatten_parameters()
 
