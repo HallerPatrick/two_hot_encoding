@@ -280,13 +280,11 @@ def tokenize_batch(
                 words.append("<eos>")
 
             ids = []
-            length = 0
-            for i, word in enumerate(ngrams(words, n)):
+            for word in ngrams(words, n):
                 try:
                     ids.append(dictionary.word2idx["".join(word)])
                 except KeyError:
                     ids.append(dictionary.word2idx[f"<{n}-UNK>"])
-                length += 1
 
             if len(ids) > len_longest_chunk:
                 len_longest_chunk = len(ids)

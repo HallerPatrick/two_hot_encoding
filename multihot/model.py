@@ -227,8 +227,7 @@ class RNNModel(nn.Module):
 
                 # [ngram, 1, sequence]
                 n_gram_char_indices = tokenize_batch(
-                    self.dictionary, chars, self.ngrams, otf=True, device=flair.device
-                ).unsqueeze(dim=1)
+                    self.dictionary, chars, self.ngrams, otf=True).unsqueeze(dim=1)
 
                 sequences_as_char_indices.append(n_gram_char_indices)
 
@@ -238,7 +237,7 @@ class RNNModel(nn.Module):
         output_parts = []
         for batch in batches:
             # [ngram, sequence, batch_size]
-            batch = batch.transpose(1, 2)
+            batch = batch.transpose(1, 2).to(flair.device)
 
             _, rnn_output, hidden = self.forward2(batch, hidden)
 
