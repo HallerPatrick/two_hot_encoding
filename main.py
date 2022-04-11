@@ -23,7 +23,7 @@ from multihot.torch_utils import (
 )
 from multihot.two_hot_encoding import soft_n_hot
 
-wandb.init(project="n-hot-encoding", entity="hallerpatrick", mode="offline")
+wandb.init(project="n-hot-encoding", entity="hallerpatrick")#, mode="offline")
 
 device: Optional[str] = None
 
@@ -206,6 +206,7 @@ def run_train(args):
                         cur_loss / math.log(2),
                     )
                 )
+                wandb.log({"loss": val_loss, "ppl":  math.exp(val_loss), "bpc": val_loss / math.log(2)})
                 total_loss = 0
                 start_time = time.time()
             if args.dry_run:
