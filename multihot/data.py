@@ -94,10 +94,13 @@ class Corpus:
     test: Optional[Tensor]
     train: Optional[Tensor]
 
-    def __init__(self, path, ngrams, unk_threshold, max_dict_size) -> None:
+    def __init__(
+        self, path, ngrams, unk_threshold, max_dict_size, unk_fallback
+    ) -> None:
         self.unk_threshold = unk_threshold
         self.ngrams = ngrams
         self.max_dict_size = max_dict_size
+        self.unk_fallback = unk_fallback
 
         # Keep track of all indexes for each ngram, this is used
         # for the generating task
@@ -167,13 +170,19 @@ class Corpus:
             # Update global frequency count
             frequencies.update(file_frequency)
 
+        print(frequencies)
         # Populate dictionary
         self.setup_dictionary(frequencies)
 
         # Tokenizing
         for train_split, lines in train_files.items():
             tokenized_text = tokenize(
-                self.dictionary, lines, self.ngrams, train_split, False
+                self.dictionary,
+                lines,
+                self.ngrams,
+                train_split,
+                False,
+                self.unk_fallback,
             )
 
             setattr(self, train_split, tokenized_text)
@@ -245,7 +254,7 @@ class Corpus:
 
 
 def tokenize_batch(
-    dictionary, lines: List[str], ngram, label=None, otf=False
+    dictionary, lines: List[str], ngram, label=None, otf=False, fallback=False
 ):
     """Tokenizes lines of text. Number of lines is already number of batches.
     Parameters
@@ -255,6 +264,8 @@ def tokenize_batch(
     otf: bool
         On the Fly (oft) tokenization that leaves out the <eos> marker token,
         used for text generating of not complete sentence
+    fallback: bool
+        If if n-gram token is UNK try using the n-1-gram token
     """
 
     n_gram_sequences = []
@@ -281,10 +292,15 @@ def tokenize_batch(
 
             ids = []
             for word in ngrams(words, n):
+                word = "".join(word)
                 try:
-                    ids.append(dictionary.word2idx["".join(word)])
+                    ids.append(dictionary.word2idx[word])
                 except KeyError:
-                    ids.append(dictionary.word2idx[f"<{n}-UNK>"])
+                    # Fall back on n-1 gram if possible
+                    if fallback and word[1:] in dictionary.word2idx:
+                        ids.append(dictionary.word2idx[word])
+                    else:
+                        ids.append(dictionary.word2idx[f"<{n}-UNK>"])
 
             if len(ids) > len_longest_chunk:
                 len_longest_chunk = len(ids)
@@ -294,9 +310,9 @@ def tokenize_batch(
         n_gram_sequences.append(idss_n)
 
     padded_char_sequence = []
-    for i, ls in enumerate(n_gram_sequences):
+    for ls in n_gram_sequences:
         new_lines = []
-        for j, line in enumerate(ls):
+        for line in ls:
             line += [padding_char_index] * (len_longest_chunk - len(line))
             new_lines.append(torch.tensor(line).type(torch.int64))
 
@@ -308,7 +324,7 @@ def tokenize_batch(
     return n_gram_sequences
 
 
-def tokenize(dictionary, lines: List[str], ngram, label, otf=False):
+def tokenize(dictionary, lines: List[str], ngram, label, otf=False, fallback=False):
     """Tokenizes lines of text.
 
     Parameters
@@ -319,6 +335,8 @@ def tokenize(dictionary, lines: List[str], ngram, label, otf=False):
     otf: bool
         On the Fly (oft) tokenization that leaves out the <eos> marker token,
         used for text generating of not complete sentence
+    fallback: bool
+        If if n-gram token is UNK try using the n-1-gram token
     """
 
     n_gram_sequences = []
@@ -350,7 +368,11 @@ def tokenize(dictionary, lines: List[str], ngram, label, otf=False):
                 try:
                     ids.append(dictionary.word2idx["".join(word)])
                 except KeyError:
-                    ids.append(dictionary.word2idx[f"<{n}-UNK>"])
+                    # Fall back on n-1 gram if possible
+                    if fallback and word[1:] in dictionary.word2idx:
+                        ids.append(dictionary.word2idx[word])
+                    else:
+                        ids.append(dictionary.word2idx[f"<{n}-UNK>"])
                 length += 1
 
             idss_n.append(torch.tensor(ids).type(torch.int64))

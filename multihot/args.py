@@ -90,6 +90,11 @@ def argparser_train():
     )
     parser.add_argument("--ngrams", type=int, default=2, help="N-Grams used")
     parser.add_argument(
+        "--unk-fallback",
+        action="store_true",
+        help="Fallback on n-1-gram if UNK for n-gram",
+    )
+    parser.add_argument(
         "--unigram-ppl",
         action="store_true",
         help="Calculate perplexity only over unigrams",

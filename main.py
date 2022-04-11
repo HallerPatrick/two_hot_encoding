@@ -15,13 +15,15 @@ from multihot.loss import CrossEntropyLossSoft
 from multihot.torch_utils import (
     batchify,
     count_parameters,
+    display_input_n_gram_sequences,
+    display_target_n_gram_sequences,
     export_onnx,
     get_batch,
     repackage_hidden,
 )
 from multihot.two_hot_encoding import soft_n_hot
 
-wandb.init(project="n-hot-encoding", entity="hallerpatrick")
+wandb.init(project="n-hot-encoding", entity="hallerpatrick", mode="offline")
 
 device: Optional[str] = None
 
@@ -44,7 +46,7 @@ def run_train(args):
     # Load data
     ###############################################################################
 
-    corpus = data.Corpus(args.data, args.ngrams, args.unk_t, args.max_dict_size)
+    corpus = data.Corpus(args.data, args.ngrams, args.unk_t, args.max_dict_size, args.unk_fallback)
 
     eval_batch_size = 10
     train_data = batchify(corpus.train, args.batch_size, device)
@@ -155,6 +157,14 @@ def run_train(args):
         ):
             data, targets = get_batch(train_data, i, args.bptt, device)
 
+            # print(corpus.get_frequency)
+            # print(data.size())
+            #
+            # for n in range(data.size()[0]):
+            #     corpus.display_text(data[n][:, :1])
+            # exit()
+
+
             # Starting each batch, we detach the hidden state from how it was previously produced.
             # If we didn't, the model would try backpropagating all the way to start of the dataset.
             model.zero_grad()
@@ -201,7 +211,6 @@ def run_train(args):
             if args.dry_run:
                 break
 
-            wandb.watch(model)
 
     # Loop over epochs.
     best_val_loss = None
